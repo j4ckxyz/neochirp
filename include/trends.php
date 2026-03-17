@@ -157,7 +157,7 @@ function merge_similar_clusters(array &$wordCounts, array $embeddings, array $wo
  * @param int   $minChirps      Minimum chirp-count for a word to qualify
  * @return array  [['word' => string, 'count' => int], ...]
  */
-function compute_trends(PDO $db, int $maxResults = 10, int $candidateCount = 50, int $minChirps = 2): array {
+function compute_trends(PDO $db, int $maxResults = 10, int $candidateCount = 50, int $minChirps = 1): array {
     $cached = get_cached_trends($maxResults);
     if ($cached !== null) return $cached;
 

@@ -3,15 +3,6 @@ session_start();
 require_once __DIR__ . '/../../config.php';
 
 try {
-    if (!DEV_MODE) {
-        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "none";
-        $allowedHosts = [APP_DOMAIN];
-        if ($host === "none" || !in_array($host, $allowedHosts)) {
-            header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
-            exit;
-        }
-    }
-
     // Check if the user is logged in
     if (!isset($_SESSION['username'])) {
         $_SESSION['error_message'] = "You need to be logged in to post.";

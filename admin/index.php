@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../include/trends.php';
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 // Admin is restricted to a single hardcoded account.
@@ -61,6 +62,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $action = $_POST['action'] ?? '';
+
+    // ── Test Ollama connection ─────────────────────────────────────────────────
+    if ($action === 'test_ollama') {
+        $url = rtrim(OLLAMA_HOST, '/') . '/api/tags';
+        $ctx = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]);
+        $raw = @file_get_contents($url, false, $ctx);
+        if ($raw === false) {
+            echo json_encode(['error' => 'Could not connect to ' . OLLAMA_HOST]);
+            exit;
+        }
+        $data = json_decode($raw, true);
+        $models = array_column($data['models'] ?? [], 'name');
+        $embedModelPresent = in_array(OLLAMA_EMBED_MODEL, $models, true);
+        // also check partial match (model might have :latest suffix stripped)
+        if (!$embedModelPresent) {
+            foreach ($models as $m) {
+                if (strpos($m, explode(':', OLLAMA_EMBED_MODEL)[0]) === 0) {
+                    $embedModelPresent = true;
+                    break;
+                }
+            }
+        }
+        $modelStr = implode(', ', array_slice($models, 0, 10));
+        if (!$embedModelPresent && !empty($models)) {
+            $modelStr .= ' ⚠️ embed model "' . OLLAMA_EMBED_MODEL . '" not found — run: ollama pull ' . OLLAMA_EMBED_MODEL;
+        } elseif (empty($models)) {
+            $modelStr = '(no models pulled yet) — run: ollama pull ' . OLLAMA_EMBED_MODEL;
+        }
+        echo json_encode(['ok' => true, 'models' => $modelStr]);
+        exit;
+    }
 
     // ── Generate invite code ───────────────────────────────────────────────────
     if ($action === 'generate_invite') {
@@ -349,6 +381,7 @@ if (isset($_GET['q']) && isset($_GET['t'])) {
         <button class="tab-btn" onclick="showTab('users', this)">Recent Users</button>
         <button class="tab-btn" onclick="showTab('search', this)">Search</button>
         <button class="tab-btn" onclick="showTab('tools', this)">Tools</button>
+        <button class="tab-btn" onclick="showTab('trends', this)">Trends</button>
     </div>
 
     <!-- Posts tab -->
@@ -441,6 +474,40 @@ if (isset($_GET['q']) && isset($_GET['t'])) {
         <?php elseif ($searchQuery !== ''): ?>
             <p class="subText">No results found.</p>
         <?php endif; ?>
+    </div>
+
+    <!-- Trends tab -->
+    <div id="tab-trends" style="display:none;">
+        <p class="section-title">Ollama Status</p>
+        <p class="subText">Model: <strong><?php echo h(OLLAMA_EMBED_MODEL); ?></strong> &nbsp;·&nbsp; Host: <strong><?php echo h(OLLAMA_HOST); ?></strong></p>
+        <button class="followButton" onclick="testOllama()" style="margin-top:8px;">Test Ollama connection</button>
+        <div id="ollama-status" style="margin-top:10px;font-size:.88rem;"></div>
+
+        <p class="section-title" style="margin-top:24px;">Trends Cache</p>
+        <?php
+        $cacheInfo = '';
+        if (file_exists(TRENDS_CACHE_FILE)) {
+            $raw = @file_get_contents(TRENDS_CACHE_FILE);
+            $cacheData = $raw ? json_decode($raw, true) : null;
+            if ($cacheData && isset($cacheData['timestamp'])) {
+                $age = time() - $cacheData['timestamp'];
+                $cacheInfo = 'Cache age: ' . round($age/60) . ' min (' . count($cacheData['trends'] ?? []) . ' trends stored)';
+            }
+        } else {
+            $cacheInfo = 'No cache file yet.';
+        }
+        ?>
+        <p class="subText"><?php echo h($cacheInfo); ?></p>
+        <button class="followButton" onclick="runRescan()" style="margin-top:8px;">Force Rescan Trends</button>
+        <div id="rescan-log" style="margin-top:12px;font-size:.85rem;font-family:monospace;background:#111;border-radius:8px;padding:12px;display:none;"></div>
+
+        <p class="section-title" style="margin-top:24px;">Ollama Setup</p>
+        <p class="subText">Ollama must be running on the host machine. In Docker on Linux, the host is reachable at <code>172.17.0.1</code>.</p>
+        <pre style="background:#111;border-radius:8px;padding:12px;font-size:.82rem;overflow:auto;"># Pull the embedding model (run on the host, not in Docker)
+ollama pull <?php echo h(OLLAMA_EMBED_MODEL); ?>
+
+# Verify it's accessible from inside Docker
+docker compose exec app curl -s <?php echo h(OLLAMA_HOST); ?>/api/tags | head -c 200</pre>
     </div>
 
     <!-- Tools tab -->
@@ -586,6 +653,45 @@ async function saveInvite() {
     } else {
         toast(res.error || 'Error', 'err');
     }
+}
+
+// ── Ollama test ────────────────────────────────────────────────────────────────
+async function testOllama() {
+    const el = document.getElementById('ollama-status');
+    el.textContent = 'Testing…';
+    const res = await adminPost({action: 'test_ollama'});
+    if (res.ok) {
+        el.style.color = '#27ae60';
+        el.textContent = '✓ Ollama reachable. Models available: ' + (res.models || '(none listed)');
+    } else {
+        el.style.color = '#e74c3c';
+        el.textContent = '✗ ' + (res.error || 'Cannot reach Ollama');
+    }
+}
+
+// ── Rescan trends ──────────────────────────────────────────────────────────────
+function runRescan() {
+    const log = document.getElementById('rescan-log');
+    log.style.display = 'block';
+    log.textContent = 'Connecting…\n';
+
+    const es = new EventSource('/dev/rescan.php');
+    es.addEventListener('progress', e => {
+        const d = JSON.parse(e.data);
+        log.textContent += `[${d.progress}%] ${d.message}\n`;
+        log.scrollTop = log.scrollHeight;
+    });
+    es.addEventListener('done', e => {
+        const d = JSON.parse(e.data);
+        log.textContent += `[100%] ${d.message}\n`;
+        if (d.trends && d.trends.length) {
+            log.textContent += '\nTrends:\n' + d.trends.map(t => `  ${t.word} (${t.count})`).join('\n');
+        }
+        log.scrollTop = log.scrollHeight;
+        es.close();
+        toast('Trends rescanned!');
+    });
+    es.onerror = () => { log.textContent += '\n[error] Connection closed.\n'; es.close(); };
 }
 
 // ── Migrate user ───────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ require_once __DIR__ . '/trends.php';
 
 $trends = [];
 try {
-    $sidebarDb = new PDO('sqlite:' . __DIR__ . '/../../chirp.db');
+    $sidebarDb = new PDO('sqlite:' . DB_PATH);
     $sidebarDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $trends = compute_trends($sidebarDb, 5);
 } catch (Exception $e) {

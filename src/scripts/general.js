@@ -302,15 +302,17 @@ applyInitialTheme();
     banner.innerHTML = `
         <div id="neochirp-welcome-inner">
             <div id="neochirp-welcome-text">
-                <strong>Welcome to NeoChirp</strong>
+                <strong>⚠️ NeoChirp — experimental &amp; unofficial</strong>
                 <p>
-                    This is an experimental fork of
-                    <a href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">Chirp</a>
-                    (originally by Adnan Bukvic), maintained by
+                    This is an <strong>unofficial, experimental fork</strong> of
+                    <a href="https://beta.chirpsocial.net/" target="_blank" rel="noopener noreferrer">Chirp</a>
+                    (<a href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">original repo</a>,
+                    by Adnan Bukvic), maintained by
                     <a href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">Jack Gilbert</a>
-                    — new features are built collaboratively with Claude Code.
-                    Things may be rough around the edges.
-                    Need an invite?
+                    using Claude Code.
+                    <strong>Not secure. Not stable. Data loss may occur.</strong>
+                    For a reliable experience use the original Chirp instead.
+                    Need an invite here?
                     <a href="https://twitter.com/jglypt" target="_blank" rel="noopener noreferrer">@jglypt on Twitter</a>
                     or
                     <a href="https://bsky.app/profile/j4ck.xyz" target="_blank" rel="noopener noreferrer">@j4ck.xyz on Bluesky</a>.

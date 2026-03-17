@@ -1,10 +1,17 @@
 <?php
+session_start();
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../include/trends.php';
 
-if (!DEV_MODE) {
+$isAdmin = isset($_SESSION['username']) && $_SESSION['username'] === 'jack';
+if (!DEV_MODE && !$isAdmin) {
     http_response_code(403);
     exit;
+}
+
+// Clear the cache so we force a fresh computation
+if (file_exists(TRENDS_CACHE_FILE)) {
+    @unlink(TRENDS_CACHE_FILE);
 }
 
 // SSE headers
@@ -35,7 +42,7 @@ sse('progress', ['step' => 'start', 'message' => 'Starting trends rescan...', 'p
 sse('progress', ['step' => 'fetch', 'message' => 'Fetching chirps from last 7 days...', 'progress' => 15]);
 
 try {
-    $db = new PDO('sqlite:' . __DIR__ . '/../../chirp.db');
+    $db = new PDO('sqlite:' . DB_PATH);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     sse('done', ['step' => 'error', 'message' => 'DB connection failed: ' . $e->getMessage(), 'progress' => 100, 'trends' => []]);

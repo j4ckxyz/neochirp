@@ -11,15 +11,6 @@ try {
         exit;
     }
 
-    // Check if the host is allowed (skipped in dev mode)
-    if (!DEV_MODE) {
-        $host = $_SERVER['HTTP_HOST'] ?? 'none';
-        if ($host === 'none' || $host !== APP_DOMAIN) {
-            echo json_encode(['error' => "Invalid host."]);
-            exit;
-        }
-    }
-
     // Check if the user is logged in
     if (!isset($_SESSION['username'])) {
         echo json_encode(['error' => "You need to be logged in to post."]);
