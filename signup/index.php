@@ -84,7 +84,7 @@ require_once __DIR__ . '/../config.php';
             </div>
             <div id="signUp">
                 <p>Let's create an account for you!</p>
-                <form id="signupForm" method="post" action="/signup/signup.php">
+                <form id="signupForm" method="post" action="/signup/signup.php" novalidate>
                     <div id="inviteCode" <?php echo DEV_MODE ? 'style="display:none"' : ''; ?>>
                         <p class="subText">Chirp is invite only for the time being. You'll need an invite code to create
                             an
@@ -136,55 +136,7 @@ require_once __DIR__ . '/../config.php';
         </div>
     </main>
     <aside id="sideBar">
-        <div id="trends">
-            <p>Trends</p>
-            <div>
-                <a href="/discover/search?q=gay_people">chirp</a>
-                <p class="subText">12 chirps</p>
-            </div>
-            <div>
-                <a>twitter</a>
-                <p class="subText">47 chirps</p>
-            </div>
-            <div>
-                <a>iphone 16</a>
-                <p class="subText">62 chirps</p>
-            </div>
-        </div>
-        <div id="whotfollow">
-            <p>Suggested accounts</p>
-            <div>
-                <div>
-                    <img class="userPic"
-                        src="https://pbs.twimg.com/profile_images/1797665112440045568/305XgPDq_400x400.png" alt="Apple">
-                    <div>
-                        <p>Apple <img class="verified" src="/src/images/icons/verified.svg" alt="Verified"></p>
-                        <p class="subText">@apple</p>
-                    </div>
-                </div>
-                <a class="followButton following">Following</a>
-            </div>
-            <div>
-                <div>
-                    <img class="userPic"
-                        src="https://pbs.twimg.com/profile_images/1881368435453542400/NnD56DYV_400x400.jpg"
-                        alt="President Trump">
-                    <div>
-                        <p>President Trump <img class="verified" src="/src/images/icons/verified.svg" alt="Verified">
-                        </p>
-                        <p class="subText">@POTUS</p>
-                    </div>
-                </div>
-                <a class="followButton">Follow</a>
-            </div>
-        </div>
-        <div>
-            <p class="subText">Inspired by Twitter/X. No code has been sourced from Twitter/X. Twemoji by Twitter Inc/X
-                Corp is licensed under CC-BY 4.0.
-
-                <br><br>You're running: Chirp Beta 0.7b 
-            </p>
-        </div>
+        <?php include '../include/sideBar.php'; ?>
     </aside>
     <footer>
         <div class="mobileMenuFooter">
