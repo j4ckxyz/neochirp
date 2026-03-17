@@ -16,7 +16,7 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('X-XSS-Protection: 1; mode=block');
 
-require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../config.php';
 
 // Function to connect to the database
 function getDatabaseConnection() {
