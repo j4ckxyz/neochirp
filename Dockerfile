@@ -1,7 +1,11 @@
 FROM php:8.4-apache
 
-# Enable PDO + SQLite
-RUN docker-php-ext-install pdo pdo_sqlite
+# Install SQLite dev libs (required to compile pdo_sqlite)
+# pdo is already built into PHP 8.4, so only install pdo_sqlite
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-install pdo_sqlite
 
 # Enable Apache mod_rewrite (needed for clean URLs)
 RUN a2enmod rewrite
