@@ -16,9 +16,11 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('X-XSS-Protection: 1; mode=block');
 
+require_once __DIR__ . '/../../config.php';
+
 // Function to connect to the database
 function getDatabaseConnection() {
-    $db = new PDO('sqlite:' . __DIR__ . '/../../chirp.db');
+    $db = new PDO('sqlite:' . DB_PATH);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     return $db;
 }
@@ -37,6 +39,38 @@ function sanitizeUsername($input) {
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
+function signin_error(string $msg): void {
+    http_response_code(401);
+    $safe = htmlspecialchars($msg, ENT_QUOTES, 'UTF-8');
+    echo <<<HTML
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <link href="/src/styles/styles.css" rel="stylesheet">
+        <link href="/src/styles/timeline.css" rel="stylesheet">
+        <title>Sign in failed — NeoChirp</title>
+    </head>
+    <body>
+        <main>
+            <div id="feed" class="settingsPageContainer">
+                <div id="iconChirp">
+                    <img src="/src/images/icons/chirp.svg" alt="Chirp">
+                </div>
+                <div class="title"><p class="selected">Sign in failed</p></div>
+                <div id="noMoreChirps">
+                    <p class="subText">$safe</p>
+                    <a class="followButton following" href="/signin/" style="margin-top:16px;display:inline-block;">Try again</a>
+                </div>
+            </div>
+        </main>
+    </body>
+    </html>
+    HTML;
+    exit();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Retrieve and sanitize user input
@@ -45,8 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Validate user input
         if (empty($username) || empty($password)) {
-            echo json_encode(['error' => 'Please fill in both fields.']);
-            exit;
+            signin_error('Please fill in both fields.');
         }
 
         // Convert username to lowercase for case-insensitive comparison
@@ -89,14 +122,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /');
             exit();
         } else {
-            // Invalid username or password
-            echo json_encode(['error' => 'Invalid username or password.']);
-            exit();
+            signin_error('Wrong username or password. Please try again.');
         }
     } catch (PDOException $e) {
-        // Handle database errors
-        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-        exit();
+        error_log('Signin DB error: ' . $e->getMessage());
+        signin_error('Something went wrong on our end. Please try again in a moment.');
     }
 } else {
     // If the request is not a POST request, redirect to the sign-in page
