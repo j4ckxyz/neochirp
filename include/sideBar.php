@@ -59,6 +59,6 @@ try {
 <?php endif; ?>
 <div>
     <p class="subText"><a class="subText" href="/docs/">📖 API Docs</a></p>
-    <p class="subText">NeoChirp is an experimental fork of <a class="subText" href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">Chirp</a> (original by Adnan Bukvic), maintained by <a class="subText" href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">Jack Gilbert</a>. New features built with Claude Code.</p>
+    <p class="subText">NeoChirp is an experimental fork of <a class="subText" href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">Chirp</a> (original by Adnan Bukvic), maintained by <a class="subText" href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">@jglypt</a>. New features built with Claude Code.</p>
     <p class="subText">Twemoji by Twitter/X Corp — CC-BY 4.0.</p>
 </div>

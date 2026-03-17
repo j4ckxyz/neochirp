@@ -97,7 +97,7 @@
             </div>
         </div>
         <div>
-            <p class="subText">NeoChirp — experimental fork of Chirp by Adnan Bukvic. Maintained by <a href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">Jack Gilbert</a>. Twemoji by Twitter/X Corp — CC-BY 4.0.</p>
+            <p class="subText">NeoChirp — experimental fork of Chirp by Adnan Bukvic. Maintained by <a href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">@jglypt</a>. Twemoji by Twitter/X Corp — CC-BY 4.0.</p>
         </div>
     </aside>
     <footer>

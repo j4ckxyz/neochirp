@@ -211,4 +211,4 @@ The database volume persists across rebuilds — your data is safe.
 
 - Original [Chirp](https://github.com/actuallyaridan/chirp) by [Adnan Bukvic](https://aridan.net) — MIT License
 - Emoji: [Twemoji](https://github.com/twitter/twemoji) by Twitter/X — CC-BY 4.0
-- NeoChirp additions by [Jack Gilbert](https://github.com/j4ckxyz)
+- NeoChirp additions by [@jglypt](https://github.com/j4ckxyz)

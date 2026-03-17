@@ -308,7 +308,7 @@ applyInitialTheme();
                     <a href="https://beta.chirpsocial.net/" target="_blank" rel="noopener noreferrer">Chirp</a>
                     (<a href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">original repo</a>,
                     by Adnan Bukvic), maintained by
-                    <a href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">Jack Gilbert</a>
+                    <a href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">@jglypt</a>
                     using Claude Code.
                     <strong>Not secure. Not stable. Data loss may occur.</strong>
                     For a reliable experience use the original Chirp instead.
