@@ -1,5 +1,16 @@
 <?php
 session_start();
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../include/trends.php';
+
+$discoverTrends = [];
+try {
+    $discoverDb = new PDO('sqlite:' . __DIR__ . '/../../chirp.db');
+    $discoverDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $discoverTrends = compute_trends($discoverDb, 10);
+} catch (Exception $e) {
+    // Non-critical
+}
 ?>
 
 <!DOCTYPE html>
@@ -33,7 +44,10 @@ session_start();
                 <a href="/"><img src="/src/images/icons/house.svg" alt=""> Home</a>
                 <a href="/discover" class="activeDesktop"><img src="/src/images/icons/search.svg" alt=""> Discover</a>
                 <?php if (isset($_SESSION['username'])): ?>
-                <a href="/notifications"><img src="/src/images/icons/bell.svg" alt=""> Notifications</a>
+                <a href="/notifications" style="position:relative;">
+                    <img src="/src/images/icons/bell.svg" alt=""> Notifications
+                    <span id="notifDot" style="display:none;position:absolute;top:2px;right:-4px;width:8px;height:8px;background:#1AD063;border-radius:50%;"></span>
+                </a>
                 <a href="/messages"><img src="/src/images/icons/envelope.svg" alt=""> Direct Messages</a>
                 <a
                     href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>">
@@ -101,18 +115,18 @@ session_start();
             </div>
             <div id="exploreTrends">
                 <div id="trends">
-                    <div>
-                        <a href="/discover/search?q=gay_people">chirp</a>
-                        <p class="subText">12 chirps</p>
-                    </div>
-                    <div>
-                        <a>twitter</a>
-                        <p class="subText">47 chirps</p>
-                    </div>
-                    <div>
-                        <a>iphone 16</a>
-                        <p class="subText">62 chirps</p>
-                    </div>
+                    <?php if (!empty($discoverTrends)): ?>
+                        <?php foreach ($discoverTrends as $trend): ?>
+                        <div>
+                            <a href="/discover/search?q=<?php echo urlencode($trend['word']); ?>">
+                                <?php echo htmlspecialchars($trend['word']); ?>
+                            </a>
+                            <p class="subText"><?php echo (int)$trend['count']; ?> chirp<?php echo $trend['count'] !== 1 ? 's' : ''; ?></p>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="subText">No trends yet this week. Start chirping!</p>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php if (isset($_SESSION['username'])): ?>
@@ -172,7 +186,7 @@ session_start();
         <div class="mobileMenuFooter">
             <a href="/"><img src="/src/images/icons/house.svg" alt="Home"></a>
             <a href="/discover" class="active"><img src="/src/images/icons/search.svg" alt="Discover"></a>
-            <a href="/notifications"><img src="/src/images/icons/bell.svg" alt="Notifications"></a>
+            <a href="/notifications"><span style="position:relative"><img src="/src/images/icons/bell.svg" alt="Notifications"><span id="notifDotMobile" style="display:none;position:absolute;top:0;right:0;width:8px;height:8px;background:#1AD063;border-radius:50%;"></span></span></a>
             <a href="/messages"><img src="/src/images/icons/envelope.svg" alt="Direct Messages"></a>
             <a
                 href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>"><img
@@ -180,6 +194,21 @@ session_start();
         </div>
     </footer>
     <?php include '../include/compose.php'; ?>
+    <script>
+(function() {
+    if (!document.getElementById('notifDot')) return;
+    fetch('/notifications/get_count.php')
+        .then(r => r.json())
+        .then(d => {
+            if (d.count > 0) {
+                document.getElementById('notifDot').style.display = 'inline-block';
+                var m = document.getElementById('notifDotMobile');
+                if (m) m.style.display = 'inline-block';
+            }
+        })
+        .catch(() => {});
+})();
+    </script>
 </body>
 
 </html>

@@ -50,14 +50,35 @@ try {
         $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $status = false;
+
+        // Delete notification for unlike/unrechirp
+        $ownerStmt = $db->prepare('SELECT user FROM chirps WHERE id = :chirpId');
+        $ownerStmt->bindParam(':chirpId', $chirpId, PDO::PARAM_INT);
+        $ownerStmt->execute();
+        $chirpOwner = $ownerStmt->fetchColumn();
+        if ($chirpOwner && $chirpOwner != $userId) {
+            $delNotif = $db->prepare('DELETE FROM notifications WHERE user_id = :owner AND actor_id = :actor AND type = :type AND chirp_id = :chirpId');
+            $delNotif->execute([':owner' => $chirpOwner, ':actor' => $userId, ':type' => $action, ':chirpId' => $chirpId]);
+        }
     } else {
         // Add the user's interaction with current timestamp
+        $now = time();
         $stmt = $db->prepare("INSERT INTO $table (chirp_id, user_id, timestamp) VALUES (:chirpId, :userId, :timestamp)");
         $stmt->bindParam(':chirpId', $chirpId, PDO::PARAM_INT);
         $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-        $stmt->bindParam(':timestamp', time(), PDO::PARAM_INT);
+        $stmt->bindParam(':timestamp', $now, PDO::PARAM_INT);
         $stmt->execute();
         $status = true;
+
+        // Insert notification for like/rechirp
+        $ownerStmt = $db->prepare('SELECT user FROM chirps WHERE id = :chirpId');
+        $ownerStmt->bindParam(':chirpId', $chirpId, PDO::PARAM_INT);
+        $ownerStmt->execute();
+        $chirpOwner = $ownerStmt->fetchColumn();
+        if ($chirpOwner && $chirpOwner != $userId) {
+            $notifStmt = $db->prepare('INSERT OR IGNORE INTO notifications (user_id, actor_id, type, chirp_id, timestamp) VALUES (:owner, :actor, :type, :chirpId, :now)');
+            $notifStmt->execute([':owner' => $chirpOwner, ':actor' => $userId, ':type' => $action, ':chirpId' => $chirpId, ':now' => $now]);
+        }
     }
 
     // Fetch updated count

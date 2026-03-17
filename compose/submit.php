@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../config.php';
 
 header('Content-Type: application/json');
 
@@ -10,12 +11,14 @@ try {
         exit;
     }
 
-    // Check if the host is allowed
-    $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "none";
-    $allowedHosts = ['beta.chirpsocial.net', 'lambsauce.chirpsocial.net', '127.0.0.1:5500', '192.168.1.230:5500'];
-    if ($host === "none" || !in_array($host, $allowedHosts)) {
-        echo json_encode(['error' => "Invalid host."]);
-        exit;
+    // Check if the host is allowed (skipped in dev mode)
+    if (!DEV_MODE) {
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "none";
+        $allowedHosts = ['beta.chirpsocial.net', 'lambsauce.chirpsocial.net', '127.0.0.1:5500', '192.168.1.230:5500'];
+        if ($host === "none" || !in_array($host, $allowedHosts)) {
+            echo json_encode(['error' => "Invalid host."]);
+            exit;
+        }
     }
 
     // Check if the user is logged in
@@ -41,27 +44,23 @@ try {
 
     $userId = $user['id'];
 
-    // Define rate limiting parameters
-    define('MAX_CHARS', 510); // Maximum characters allowed for a chirp
+    define('MAX_CHARS', 510);
 
-    // Check if the last submission time and attempt count are stored in the session
-    $lastSubmissionTime = isset($_SESSION['last_submission_time']) ? $_SESSION['last_submission_time'] : 0;
-    $attemptCount = isset($_SESSION['attempt_count']) ? $_SESSION['attempt_count'] : 0;
     $currentTime = time();
 
-    // Calculate cooldown period based on attempt count
-    $cooldownSeconds = min(10 + ($attemptCount * 10), 1800); // 10 seconds base, increase by 10s per attempt, max 30 minutes (1800 seconds)
+    if (!DEV_MODE) {
+        // Rate limiting (disabled in dev mode)
+        $lastSubmissionTime = isset($_SESSION['last_submission_time']) ? $_SESSION['last_submission_time'] : 0;
+        $attemptCount = isset($_SESSION['attempt_count']) ? $_SESSION['attempt_count'] : 0;
+        $cooldownSeconds = min(10 + ($attemptCount * 10), 1800);
 
-    // Check if cooldown period has elapsed
-    if ($currentTime - $lastSubmissionTime < $cooldownSeconds) {
-        // Rate limit exceeded, increment attempt count
-        $_SESSION['attempt_count'] = ++$attemptCount;
-        echo json_encode(['error' => "You are posting too quickly. Slow down!"]);
-        exit;
+        if ($currentTime - $lastSubmissionTime < $cooldownSeconds) {
+            $_SESSION['attempt_count'] = ++$attemptCount;
+            echo json_encode(['error' => "You are posting too quickly. Slow down!"]);
+            exit;
+        }
+        $_SESSION['attempt_count'] = 0;
     }
-
-    // Reset attempt count on successful submission
-    $_SESSION['attempt_count'] = 0;
 
     // Check if chirp text is empty or exceeds maximum allowed characters
     $chirpText = trim($_POST['chirpComposeText']);

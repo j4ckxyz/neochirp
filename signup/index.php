@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../config.php';
 ?>
 
 <!DOCTYPE html>
@@ -84,14 +85,14 @@ session_start();
             <div id="signUp">
                 <p>Let's create an account for you!</p>
                 <form id="signupForm" method="post" action="/signup/signup.php">
-                    <div id="inviteCode">
+                    <div id="inviteCode" <?php echo DEV_MODE ? 'style="display:none"' : ''; ?>>
                         <p class="subText">Chirp is invite only for the time being. You'll need an invite code to create
                             an
                             account.</p>
                         <p class="subText">Don't have an invite code? You can get one by sending a DM on Twitter to
                             @actuallyaridan or @use_chirp.</p>
                         <div id="inputSignup">
-                            <input type="text" id="code" name="code" placeholder="Invite code" required>
+                            <input type="text" id="code" name="code" placeholder="Invite code" <?php echo DEV_MODE ? '' : 'required'; ?>>
                             <button type="button" class="followButton"
                                 onclick="showNextSection('nameUser')">Next</button>
                         </div>
@@ -199,6 +200,11 @@ session_start();
     </footer>
     <?php include '../include/compose.php'; ?>
     <script>
+    // In dev mode, start on the name step
+    <?php if (DEV_MODE): ?>
+    document.addEventListener('DOMContentLoaded', () => showNextSection('nameUser'));
+    <?php endif; ?>
+
     function showNextSection(nextSectionId) {
         const sections = ['inviteCode', 'nameUser', 'pwordUser'];
 

@@ -22,3 +22,7 @@ Temporary Items
 .vscode
 *.db
 /src/images/users/*
+
+# NeoChirp additions
+.env
+trends_cache.json

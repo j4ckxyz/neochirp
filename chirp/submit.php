@@ -1,13 +1,15 @@
 <?php
 session_start();
+require_once __DIR__ . '/../../config.php';
 
 try {
-    // Check if the host is allowed
-    $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "none";
-    $allowedHosts = ['beta.chirpsocial.net'];
-    if ($host === "none" || !in_array($host, $allowedHosts)) {
-        header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
-        exit;
+    if (!DEV_MODE) {
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "none";
+        $allowedHosts = ['beta.chirpsocial.net'];
+        if ($host === "none" || !in_array($host, $allowedHosts)) {
+            header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
+            exit;
+        }
     }
 
     // Check if the user is logged in
@@ -47,12 +49,14 @@ try {
     $cooldownSeconds = min(10 + ($attemptCount * 10), 1800); // 10 seconds base, increase by 10s per attempt, max 30 minutes (1800 seconds)
 
     // Check if cooldown period has elapsed
-    if ($currentTime - $lastSubmissionTime < $cooldownSeconds) {
-        // Rate limit exceeded, increment attempt count
-        $_SESSION['attempt_count'] = ++$attemptCount;
-        $_SESSION['error_message'] = "You are posting too quickly. Slow down!";
-        header('Location: /');
-        exit;
+    if (!DEV_MODE) {
+        if ($currentTime - $lastSubmissionTime < $cooldownSeconds) {
+            // Rate limit exceeded, increment attempt count
+            $_SESSION['attempt_count'] = ++$attemptCount;
+            $_SESSION['error_message'] = "You are posting too quickly. Slow down!";
+            header('Location: /');
+            exit;
+        }
     }
 
     // Reset attempt count on successful submission
@@ -97,6 +101,17 @@ try {
 
     // Store the ID of the newly inserted chirp
     $chirpId = $db->lastInsertId();
+
+    // Notify parent post owner of reply
+    if ($mainPostId) {
+        $pStmt = $db->prepare('SELECT user FROM chirps WHERE id = :pid');
+        $pStmt->execute([':pid' => $mainPostId]);
+        $parentOwner = $pStmt->fetchColumn();
+        if ($parentOwner && $parentOwner != $userId) {
+            $nStmt = $db->prepare('INSERT INTO notifications (user_id, actor_id, type, chirp_id, timestamp) VALUES (:uid, :actor, :type, :cid, :ts)');
+            $nStmt->execute([':uid' => $parentOwner, ':actor' => $userId, ':type' => 'reply', ':cid' => $chirpId, ':ts' => time()]);
+        }
+    }
 
     // Update last submission time in session
     $_SESSION['last_submission_time'] = $currentTime;

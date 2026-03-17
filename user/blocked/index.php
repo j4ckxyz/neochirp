@@ -28,7 +28,7 @@ if (!$id) {
         $userNotFound = false;
         $pageTitle = htmlspecialchars($user['name']) . ' (@' . htmlspecialchars($user['username']) . ') blocked you - Chirp';
         $isUserProfile = isset($_SESSION['username']) && strtolower($_SESSION['username']) === strtolower($user['username']);
-        $user['is_verified'] = strtolower($user['isVerified']) === 'yes';
+        $user['is_verified'] = strtolower((string)($user['isVerified'] ?? '')) === 'yes';
 
         // Fetch follower and following counts
         $followerStmt = $db->prepare('SELECT COUNT(*) FROM following WHERE following_id = :userId');

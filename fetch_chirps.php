@@ -141,7 +141,7 @@ try {
         // Escape other fields for safety (already correct)
         $row['username'] = htmlspecialchars($row['username']);
         $row['name'] = htmlspecialchars($row['name']);
-        $row['profilePic'] = htmlspecialchars_decode($row['profilePic']);
+        $row['profilePic'] = htmlspecialchars_decode((string)($row['profilePic'] ?? ''));
         $row['isVerified'] = (bool)$row['isVerified'];
         $row['liked_by_current_user'] = (bool)$row['liked_by_current_user'];
         $row['rechirped_by_current_user'] = (bool)$row['rechirped_by_current_user'];

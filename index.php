@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/config.php';
 try {
     $db = new PDO('sqlite:' . __DIR__ . '/../chirp.db');
 } catch (PDOException $e) {
@@ -44,7 +45,10 @@ try {
                 <a href="/" class="activeDesktop"><img src="/src/images/icons/house.svg" alt=""> Home</a>
                 <a href="/discover"><img src="/src/images/icons/search.svg" alt=""> Discover</a>
                 <?php if (isset($_SESSION['username'])): ?>
-                    <a href="/notifications"><img src="/src/images/icons/bell.svg" alt=""> Notifications</a>
+                    <a href="/notifications" style="position:relative;">
+                        <img src="/src/images/icons/bell.svg" alt=""> Notifications
+                        <span id="notifDot" style="display:none;position:absolute;top:2px;right:-4px;width:8px;height:8px;background:#1AD063;border-radius:50%;"></span>
+                    </a>
                     <a href="/messages"><img src="/src/images/icons/envelope.svg" alt=""> Direct Messages</a>
                     <a
                         href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>">
@@ -56,6 +60,9 @@ try {
             <div id="menuSettings">
                 <?php if (isset($_SESSION['username']) && $_SESSION['username'] == 'chirp'): ?>
                     <a href="/admin">🛡️ Admin panel</a>
+                <?php endif; ?>
+                <?php if (DEV_MODE): ?>
+                <a href="/dev/">🛠️ Dev Console</a>
                 <?php endif; ?>
                 <a href="/settings/account">⚙️ Settings</a>
                 <?php if (isset($_SESSION['username'])): ?>
@@ -97,8 +104,9 @@ try {
                     <a class="menuMobileTL" href="/settings/account">⚙️</a>
                 </div>
                 <div>
-                    <a id="forYou" class="selected" href="/">For you</a>
-                    <a id="following" href="following">Following</a>
+                    <a id="forYou" class="selected" href="/">Latest</a>
+                    <a id="whatsHot" href="/hot">What's Hot</a>
+                    <a id="following" href="/following">Following</a>
                 </div>
             </div>
             <div id="highTraffic">
@@ -148,7 +156,7 @@ try {
         <div class="mobileMenuFooter">
             <a href="/" class="active"><img src="/src/images/icons/house.svg" alt="Home"></a>
             <a href="/discover"><img src="/src/images/icons/search.svg" alt="Discover"></a>
-            <a href="/notifications"><img src="/src/images/icons/bell.svg" alt="Notifications"></a>
+            <a href="/notifications"><span style="position:relative"><img src="/src/images/icons/bell.svg" alt="Notifications"><span id="notifDotMobile" style="display:none;position:absolute;top:0;right:0;width:8px;height:8px;background:#1AD063;border-radius:50%;"></span></span></a>
             <a href="/messages"><img src="/src/images/icons/envelope.svg" alt="Direct Messages"></a>
             <a
                 href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>"><img
@@ -172,6 +180,21 @@ try {
         </div>
     </div>
     <script defer src="/src/scripts/loadChirps.js"></script>
+    <script>
+(function() {
+    if (!document.getElementById('notifDot')) return;
+    fetch('/notifications/get_count.php')
+        .then(r => r.json())
+        .then(d => {
+            if (d.count > 0) {
+                document.getElementById('notifDot').style.display = 'inline-block';
+                var m = document.getElementById('notifDotMobile');
+                if (m) m.style.display = 'inline-block';
+            }
+        })
+        .catch(() => {});
+})();
+    </script>
 
 </body>
 

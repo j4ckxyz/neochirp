@@ -33,7 +33,10 @@ session_start();
                 <a href="/"><img src="/src/images/icons/house.svg" alt=""> Home</a>
                 <a href="/discover"><img src="/src/images/icons/search.svg" alt=""> Discover</a>
                 <?php if (isset($_SESSION['username'])): ?>
-                <a href="/notifications"><img src="/src/images/icons/bell.svg" alt=""> Notifications</a>
+                <a href="/notifications" style="position:relative;">
+                    <img src="/src/images/icons/bell.svg" alt=""> Notifications
+                    <span id="notifDot" style="display:none;position:absolute;top:2px;right:-4px;width:8px;height:8px;background:#1AD063;border-radius:50%;"></span>
+                </a>
                 <a href="/messages"><img src="/src/images/icons/envelope.svg" alt=""> Direct Messages</a>
                 <a
                     href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>">
@@ -105,6 +108,9 @@ session_start();
                             <a class="settingsMenuLink" href="/settings/notifications">🔔 Notifications</a>
                         </li>
                         <li>
+                            <a class="settingsMenuLink" href="/settings/api/">🔑 API Keys</a>
+                        </li>
+                        <li>
                             <a class="settingsMenuLink" href="https://help.chirpsocial.net">📕 Help Center</a>
                         </li>
                         <li><p class="subText">Chirp Beta 0.7b</p></li>
@@ -152,7 +158,7 @@ session_start();
         <div class="mobileMenuFooter">
             <a href="/"><img src="/src/images/icons/house.svg" alt="Home"></a>
             <a href="/discover"><img src="/src/images/icons/search.svg" alt="Discover"></a>
-            <a href="/notifications"><img src="/src/images/icons/bell.svg" alt="Notifications"></a>
+            <a href="/notifications"><span style="position:relative"><img src="/src/images/icons/bell.svg" alt="Notifications"><span id="notifDotMobile" style="display:none;position:absolute;top:0;right:0;width:8px;height:8px;background:#1AD063;border-radius:50%;"></span></span></a>
             <a href="/messages"><img src="/src/images/icons/envelope.svg" alt="Direct Messages"></a>
             <a
                 href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>"><img
@@ -160,6 +166,21 @@ session_start();
         </div>
     </footer>
     <?php include '../../include/compose.php'; ?>
+    <script>
+(function() {
+    if (!document.getElementById('notifDot')) return;
+    fetch('/notifications/get_count.php')
+        .then(r => r.json())
+        .then(d => {
+            if (d.count > 0) {
+                document.getElementById('notifDot').style.display = 'inline-block';
+                var m = document.getElementById('notifDotMobile');
+                if (m) m.style.display = 'inline-block';
+            }
+        })
+        .catch(() => {});
+})();
+    </script>
 </body>
 
 </html>

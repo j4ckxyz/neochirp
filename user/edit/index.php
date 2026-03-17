@@ -35,7 +35,7 @@ if (!isset($_SESSION['username'])) {
         $userNotFound = false;
         // Set the page title dynamically
                 $isUserProfile = isset($_SESSION['username']) && strtolower($_SESSION['username']) === strtolower($user['username']);
-        $user['is_verified'] = strtolower($user['isVerified']) === 'yes';
+        $user['is_verified'] = strtolower((string)($user['isVerified'] ?? '')) === 'yes';
     }
 
     // Close the database connection

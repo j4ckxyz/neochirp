@@ -27,7 +27,8 @@ function loadChirps() {
 
     setTimeout(() => {
         console.log('Fetching chirps from server');
-        fetch(`/fetch_chirps.php?offset=${offset}`)
+        const feedUrl = chirpsContainer.getAttribute('data-feed-url') || '/fetch_chirps.php';
+        fetch(`${feedUrl}?offset=${offset}`)
             .then(response => {
                 console.log('Received response from server');
                 return response.json();
