@@ -96,7 +96,7 @@ require_once __DIR__ . '/../config.php';
                                 onclick="showNextSection('nameUser')">Next</button>
                         </div>
                     </div>
-                    <div id="nameUser">
+                    <div id="nameUser" style="display:none">
                         <p class="subText">Great! Now Chirpie just needs to get to know you and he'll set up your
                             account in
                             no time!</p>
@@ -110,7 +110,7 @@ require_once __DIR__ . '/../config.php';
                                 onclick="showNextSection('pwordUser')">Next</button>
                         </div>
                     </div>
-                    <div id="pwordUser">
+                    <div id="pwordUser" style="display:none">
                         <p class="subText">Amazing! Now we just need to set up a password for you and you'll be all
                             done!
                         </p>
