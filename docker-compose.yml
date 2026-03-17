@@ -9,15 +9,15 @@ services:
       APP_DOMAIN:   ${APP_DOMAIN:-chirp.j4ck.xyz}
       APP_HTTPS:    ${APP_HTTPS:-true}
       DEV_MODE:     ${DEV_MODE:-false}
-      # Database: /var/www/chirp.db (mounted volume, one level above web root)
-      DB_PATH:      /var/www/chirp.db
+      # Database: stored in a dedicated data volume, separate from web root
+      DB_PATH:      /var/www/data/chirp.db
       # Ollama — on Linux the Docker host is reachable at 172.17.0.1
       OLLAMA_HOST:        ${OLLAMA_HOST:-http://172.17.0.1:11434}
       OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-qwen3-embedding:0.6b}
       OLLAMA_TIMEOUT:     ${OLLAMA_TIMEOUT:-10}
     volumes:
-      # Persist the SQLite database between container restarts/rebuilds
-      - chirp_data:/var/www
+      # Persist only the database — web root stays as built image files
+      - chirp_data:/var/www/data
     # Only expose to localhost — Cloudflare tunnel talks to the container directly
     ports:
       - "127.0.0.1:8080:80"
