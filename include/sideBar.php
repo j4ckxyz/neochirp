@@ -58,11 +58,7 @@ try {
 </div>
 <?php endif; ?>
 <div>
-    <p class="subText">NeoChirp is an independent fork of <a class="subText" href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">Chirp</a> by Adnan Bukvic. Not affiliated with the original Chirp team.</p>
-    <p class="subText">Inspired by Twitter/X. Twemoji by Twitter Inc/X Corp — CC-BY 4.0.
-        <br><br>You're running: NeoChirp 1.0
-    </p>
-    <p class="subText">Visit Chirps source code on <a class="subText" href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">GitHub</a></p>
     <p class="subText"><a class="subText" href="/docs/">📖 API Docs</a></p>
-    <p class="subText">Proudly developed in Sweden by <a class="subText" href="https://aridan.net" target="_blank" rel="noopener noreferrer">Adnan Bukvic</a></p>
+    <p class="subText">NeoChirp is an experimental fork of <a class="subText" href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">Chirp</a> (original by Adnan Bukvic), maintained by <a class="subText" href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">Jack Gilbert</a>. New features built with Claude Code.</p>
+    <p class="subText">Twemoji by Twitter/X Corp — CC-BY 4.0.</p>
 </div>

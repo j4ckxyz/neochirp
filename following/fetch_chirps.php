@@ -1,16 +1,13 @@
 <?php
 
-$allowedOrigins = [
-    "https://beta.chirpsocial.net",
-    "https://chirpsocial.net",
-    "http://legacy.chirpsocial.net",
-    "https://legacy.chirpsocial.net"
-];
-
-if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowedOrigins)) {
-    header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+// Allow same-origin requests only
+if (defined('APP_DOMAIN')) {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowed = ['https://' . APP_DOMAIN, 'http://' . APP_DOMAIN];
+    if ($origin && in_array($origin, $allowed, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+    }
 }
-
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 

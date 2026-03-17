@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../config.php';
 try {
     if (!DEV_MODE) {
         $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "none";
-        $allowedHosts = ['beta.chirpsocial.net'];
+        $allowedHosts = [APP_DOMAIN];
         if ($host === "none" || !in_array($host, $allowedHosts)) {
             header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
             exit;

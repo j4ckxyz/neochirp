@@ -45,8 +45,8 @@ require_once __DIR__ . '/../config.php';
                 <?php endif; ?>
             </nav>
             <div id="menuSettings">
-                <?php if (isset($_SESSION['username']) && $_SESSION['username'] == 'chirp'): ?>
-                <a href="/admin">🛡️ Admin panel</a>
+                <?php if (isset($_SESSION['username']) && $_SESSION['username'] === 'jack'): ?>
+                <a href="/admin/">🛡️ Admin Panel</a>
                 <?php endif; ?>
                 <a href="/settings/account">⚙️ Settings</a>
                 <?php if (isset($_SESSION['username'])): ?>
@@ -89,8 +89,7 @@ require_once __DIR__ . '/../config.php';
                         <p class="subText">Chirp is invite only for the time being. You'll need an invite code to create
                             an
                             account.</p>
-                        <p class="subText">Don't have an invite code? You can get one by sending a DM on Twitter to
-                            @actuallyaridan or @use_chirp.</p>
+                        <p class="subText">Don't have an invite code? Reach out to <a href="https://twitter.com/jglypt" target="_blank" rel="noopener noreferrer">@jglypt on Twitter</a> or <a href="https://bsky.app/profile/j4ck.xyz" target="_blank" rel="noopener noreferrer">@j4ck.xyz on Bluesky</a>.</p>
                         <div id="inputSignup">
                             <input type="text" id="code" name="code" placeholder="Invite code" <?php echo DEV_MODE ? '' : 'required'; ?>>
                             <button type="button" class="followButton"
@@ -126,11 +125,11 @@ require_once __DIR__ . '/../config.php';
                     </div>
                 </form>
                 <div id="errors">
-                    <p id="invalidCodeError">Invalid invite code.<br>If you don't have an invite code, send a DM to @actuallyaridan or @use_chirp over Twitter.</p>
+                    <p id="invalidCodeError">Invalid invite code.<br>Need one? DM <a href="https://twitter.com/jglypt" target="_blank" rel="noopener noreferrer">@jglypt on Twitter</a> or <a href="https://bsky.app/profile/j4ck.xyz" target="_blank" rel="noopener noreferrer">@j4ck.xyz on Bluesky</a>.</p>
                     <p id="usernameTakenError">This username already in use.<br>You need to have a unique username.</p>
                     <p id="passwordMismatchError">Passwords do not match</p>
                     <p id="invalidUsernameError">Invalid username. <br>Only latin letters A to Z, numbers 0 to 9 along with underscores are allowed.</p>
-                    <p id="reservedUsernameError">This username is reserved.<br>You need a reserved invite code in order to register it. Obtain one by sending a DM to @actuallyaridan or @use_chirp over Twitter.</p>
+                    <p id="reservedUsernameError">This username is reserved.<br>You need a reserved invite code to register it. DM <a href="https://twitter.com/jglypt" target="_blank" rel="noopener noreferrer">@jglypt on Twitter</a> or <a href="https://bsky.app/profile/j4ck.xyz" target="_blank" rel="noopener noreferrer">@j4ck.xyz on Bluesky</a>.</p>
                     <p id="inviteNotReservedError">You're using a reserved invite code. <br>You must register the username linked with this invite code.</p>
                 </div>
             </div>

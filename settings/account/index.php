@@ -111,7 +111,7 @@ session_start();
                             <a class="settingsMenuLink" href="/settings/api/">🔑 API Keys</a>
                         </li>
                         <li>
-                            <a class="settingsMenuLink" href="https://help.chirpsocial.net">📕 Help Center</a>
+                            <a class="settingsMenuLink" href="/docs/">📕 Help Center</a>
                         </li>
                         <li><p class="subText">Chirp Beta 0.7b</p></li>
                     </ul>

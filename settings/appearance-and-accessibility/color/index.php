@@ -114,7 +114,7 @@ session_start();
                             <a class="settingsMenuLink" href="/settings/notifications">🔔 Notifications</a>
                         </li>
                         <li>
-                            <a class="settingsMenuLink" href="https://help.chirpsocial.net">📕 Help Center</a>
+                            <a class="settingsMenuLink" href="/docs/">📕 Help Center</a>
                         </li>
                     </ul>
 

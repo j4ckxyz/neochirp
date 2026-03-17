@@ -1,22 +1,14 @@
 <?php
 
-// List of allowed origins
-$allowedOrigins = [
-    "https://beta.chirpsocial.net",
-    "https://chirpsocial.net",
-    "http://legacy.chirpsocial.net",
-    "https://legacy.chirpsocial.net"
-];
-
-// Get the Origin header from the request
-if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowedOrigins)) {
-    header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+// Allow same-origin requests only
+if (defined('APP_DOMAIN')) {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowed = ['https://' . APP_DOMAIN, 'http://' . APP_DOMAIN];
+    if ($origin && in_array($origin, $allowed, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+    }
 }
-
-// Allow specific HTTP methods
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-
-// Allow specific headers
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 // Handle preflight (OPTIONS) requests

@@ -13,9 +13,8 @@ try {
 
     // Check if the host is allowed (skipped in dev mode)
     if (!DEV_MODE) {
-        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "none";
-        $allowedHosts = ['beta.chirpsocial.net', 'lambsauce.chirpsocial.net', '127.0.0.1:5500', '192.168.1.230:5500'];
-        if ($host === "none" || !in_array($host, $allowedHosts)) {
+        $host = $_SERVER['HTTP_HOST'] ?? 'none';
+        if ($host === 'none' || $host !== APP_DOMAIN) {
             echo json_encode(['error' => "Invalid host."]);
             exit;
         }

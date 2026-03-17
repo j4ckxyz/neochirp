@@ -145,7 +145,7 @@ function back() {
     if (document.referrer) {
         window.history.back();
     } else {
-        window.location.href = 'https://beta.chirpsocial.net';
+        window.location.href = '/';
     }
 }
 
@@ -291,6 +291,84 @@ const applyInitialTheme = () => {
     htmlEl.style.setProperty('--hover-color', currentHoverAccentColor);
 };
 applyInitialTheme();
+
+// ── First-visit welcome banner ─────────────────────────────────────────────────
+// Shows once per browser session (sessionStorage), never again after dismiss.
+(function () {
+    if (sessionStorage.getItem('neochirp_welcomed')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'neochirp-welcome-banner';
+    banner.innerHTML = `
+        <div id="neochirp-welcome-inner">
+            <div id="neochirp-welcome-text">
+                <strong>Welcome to NeoChirp</strong>
+                <p>
+                    This is an experimental fork of
+                    <a href="https://github.com/actuallyaridan/chirp" target="_blank" rel="noopener noreferrer">Chirp</a>
+                    (originally by Adnan Bukvic), maintained by
+                    <a href="https://github.com/j4ckxyz" target="_blank" rel="noopener noreferrer">Jack Gilbert</a>
+                    — new features are built collaboratively with Claude Code.
+                    Things may be rough around the edges.
+                    Need an invite?
+                    <a href="https://twitter.com/jglypt" target="_blank" rel="noopener noreferrer">@jglypt on Twitter</a>
+                    or
+                    <a href="https://bsky.app/profile/j4ck.xyz" target="_blank" rel="noopener noreferrer">@j4ck.xyz on Bluesky</a>.
+                </p>
+            </div>
+            <button id="neochirp-welcome-close" aria-label="Dismiss">Got it</button>
+        </div>
+    `;
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #neochirp-welcome-banner {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 10000;
+            background: var(--accent-color, #1AD063);
+            color: #000;
+            padding: 14px 20px;
+            box-shadow: 0 -2px 16px rgba(0,0,0,.4);
+            animation: nc-slide-up .35s cubic-bezier(.22,1,.36,1);
+        }
+        @keyframes nc-slide-up {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0);    }
+        }
+        #neochirp-welcome-banner.nc-hiding {
+            animation: nc-slide-down .3s ease forwards;
+        }
+        @keyframes nc-slide-down {
+            to { transform: translateY(110%); opacity: 0; }
+        }
+        #neochirp-welcome-inner {
+            display: flex; align-items: center; gap: 16px;
+            max-width: 900px; margin: 0 auto; flex-wrap: wrap;
+        }
+        #neochirp-welcome-text { flex: 1; min-width: 220px; font-size: .88rem; }
+        #neochirp-welcome-text strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+        #neochirp-welcome-text p { margin: 0; line-height: 1.5; }
+        #neochirp-welcome-text a { color: #000; text-decoration: underline; font-weight: 600; }
+        #neochirp-welcome-close {
+            flex-shrink: 0;
+            background: rgba(0,0,0,.18); border: none; border-radius: 20px;
+            padding: 8px 20px; font-size: .9rem; font-weight: 700;
+            cursor: pointer; color: #000;
+            transition: background .15s;
+        }
+        #neochirp-welcome-close:hover { background: rgba(0,0,0,.3); }
+    `;
+
+    document.head.appendChild(style);
+    document.body.appendChild(banner);
+
+    document.getElementById('neochirp-welcome-close').addEventListener('click', function () {
+        banner.classList.add('nc-hiding');
+        sessionStorage.setItem('neochirp_welcomed', '1');
+        setTimeout(() => banner.remove(), 350);
+    });
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
     // Function to update theme based on "auto" mode

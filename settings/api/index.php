@@ -146,7 +146,7 @@ if (isset($_SESSION['new_api_key'])) {
                             <a class="settingsMenuLink" href="/settings/developer/">🛠️ Developer Apps</a>
                         </li>
                         <li>
-                            <a class="settingsMenuLink" href="https://help.chirpsocial.net">📕 Help Center</a>
+                            <a class="settingsMenuLink" href="/docs/">📕 Help Center</a>
                         </li>
                         <li><p class="subText">Chirp Beta 0.7b</p></li>
                     </ul>

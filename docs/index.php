@@ -514,7 +514,7 @@ php -d display_errors=Off -S localhost:8080 -t /path/to/chirp
                 <span>CURL — PRODUCTION</span>
                 <button class="copy-btn" onclick="copyCode(this)">Copy</button>
             </div>
-            <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirpsocial.net/api/v1/feed/latest.php</span> \
+            <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirp.j4ck.xyz/api/v1/feed/latest.php</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key_here"</span></pre>
         </div>
 
@@ -523,7 +523,7 @@ php -d display_errors=Off -S localhost:8080 -t /path/to/chirp
                 <span>JAVASCRIPT</span>
                 <button class="copy-btn" onclick="copyCode(this)">Copy</button>
             </div>
-            <pre><span class="tok-kw">const</span> BASE    = <span class="tok-str">'http://localhost:8080'</span>;  <span class="tok-cmt">// or https://chirpsocial.net</span>
+            <pre><span class="tok-kw">const</span> BASE    = <span class="tok-str">'http://localhost:8080'</span>;  <span class="tok-cmt">// or https://chirp.j4ck.xyz</span>
 <span class="tok-kw">const</span> API_KEY = <span class="tok-str">'chirp_your_key_here'</span>;
 
 <span class="tok-kw">const</span> res = <span class="tok-kw">await</span> fetch(<span class="tok-str">`${BASE}/api/v1/feed/latest.php`</span>, {
@@ -539,7 +539,7 @@ php -d display_errors=Off -S localhost:8080 -t /path/to/chirp
             </div>
             <pre><span class="tok-kw">import</span> requests
 
-BASE    = <span class="tok-str">"http://localhost:8080"</span>   <span class="tok-cmt"># or https://chirpsocial.net</span>
+BASE    = <span class="tok-str">"http://localhost:8080"</span>   <span class="tok-cmt"># or https://chirp.j4ck.xyz</span>
 API_KEY = <span class="tok-str">"chirp_your_key_here"</span>
 HDR     = {<span class="tok-str">"Authorization"</span>: <span class="tok-str">f"Bearer {API_KEY}"</span>}
 
@@ -609,7 +609,7 @@ posts = r.json()</pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirpsocial.net/api/v1/feed/latest.php?offset=0&limit=20"</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirp.j4ck.xyz/api/v1/feed/latest.php?offset=0&limit=20"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span></pre>
                 </div>
                 <div class="response-label">Response — array of chirp objects</div>
@@ -656,7 +656,7 @@ posts = r.json()</pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirpsocial.net/api/v1/feed/hot.php"</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirp.j4ck.xyz/api/v1/feed/hot.php"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span></pre>
                 </div>
                 <p>Response shape is identical to <code style="background:var(--code-bg);padding:1px 6px;border-radius:4px;color:#c4b5fd;">/feed/latest.php</code>.</p>
@@ -687,7 +687,7 @@ posts = r.json()</pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirpsocial.net/api/v1/chirp/getChirp.php?id=42"</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirp.j4ck.xyz/api/v1/chirp/getChirp.php?id=42"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span></pre>
                 </div>
                 <div class="response-label">Response — chirp object</div>
@@ -732,7 +732,7 @@ posts = r.json()</pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirpsocial.net/api/v1/chirp/getReplies.php?id=42"</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirp.j4ck.xyz/api/v1/chirp/getReplies.php?id=42"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span></pre>
                 </div>
                 <p>Response is an array of chirp objects (same shape as the feed), where <code style="background:var(--code-bg);padding:1px 6px;border-radius:4px;color:#c4b5fd;">type</code> is <code style="background:var(--code-bg);padding:1px 6px;border-radius:4px;color:#86efac;">"reply"</code>.</p>
@@ -837,7 +837,7 @@ posts = r.json()</pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirpsocial.net/api/v1/chirp/post.php</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirp.j4ck.xyz/api/v1/chirp/post.php</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Content-Type: application/json"</span> \
   <span class="tok-hdr">-d</span> <span class="tok-str">'{"text": "Hello from the API!"}'</span></pre>
@@ -852,7 +852,7 @@ posts = r.json()</pre>
                     <pre><span class="tok-kw">import</span> requests
 
 r = requests.post(
-    <span class="tok-str">"https://chirpsocial.net/api/v1/chirp/post.php"</span>,
+    <span class="tok-str">"https://chirp.j4ck.xyz/api/v1/chirp/post.php"</span>,
     json={<span class="tok-str">"text"</span>: <span class="tok-str">"Hello from Python!"</span>},
     headers={<span class="tok-str">"Authorization"</span>: <span class="tok-str">f"Bearer {API_KEY}"</span>}
 )
@@ -882,7 +882,7 @@ print(r.json())  <span class="tok-cmt"># {'id': 43, 'ok': True}</span></pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirpsocial.net/api/v1/chirp/reply.php</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirp.j4ck.xyz/api/v1/chirp/reply.php</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Content-Type: application/json"</span> \
   <span class="tok-hdr">-d</span> <span class="tok-str">'{"text": "Great post!", "parent_id": 42}'</span></pre>
@@ -913,7 +913,7 @@ print(r.json())  <span class="tok-cmt"># {'id': 43, 'ok': True}</span></pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirpsocial.net/api/v1/chirp/like.php</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirp.j4ck.xyz/api/v1/chirp/like.php</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Content-Type: application/json"</span> \
   <span class="tok-hdr">-d</span> <span class="tok-str">'{"chirp_id": 42}'</span></pre>
@@ -947,7 +947,7 @@ print(r.json())  <span class="tok-cmt"># {'id': 43, 'ok': True}</span></pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirpsocial.net/api/v1/chirp/rechirp.php</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">https://chirp.j4ck.xyz/api/v1/chirp/rechirp.php</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Content-Type: application/json"</span> \
   <span class="tok-hdr">-d</span> <span class="tok-str">'{"chirp_id": 42}'</span></pre>
@@ -986,7 +986,7 @@ print(r.json())  <span class="tok-cmt"># {'id': 43, 'ok': True}</span></pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirpsocial.net/api/v1/user/getUser.php?username=alice"</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirp.j4ck.xyz/api/v1/user/getUser.php?username=alice"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span></pre>
                 </div>
                 <div class="response-label">Response</div>
@@ -1032,7 +1032,7 @@ print(r.json())  <span class="tok-cmt"># {'id': 43, 'ok': True}</span></pre>
                 </table>
                 <div class="code-block">
                     <div class="code-block-header"><span>EXAMPLE REQUEST</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirpsocial.net/api/v1/notifications/get.php"</span> \
+                    <pre><span class="tok-kw">curl</span> <span class="tok-url">"https://chirp.j4ck.xyz/api/v1/notifications/get.php"</span> \
   <span class="tok-hdr">-H</span> <span class="tok-str">"Authorization: Bearer chirp_your_key"</span></pre>
                 </div>
                 <div class="response-label">Response</div>
@@ -1070,7 +1070,7 @@ print(r.json())  <span class="tok-cmt"># {'id': 43, 'ok': True}</span></pre>
             <div class="code-block-header"><span>PYTHON</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
             <pre><span class="tok-kw">import</span> requests
 
-BASE = <span class="tok-str">"http://localhost:8080/api/v1"</span>   <span class="tok-cmt"># swap for https://chirpsocial.net/api/v1 in prod</span>
+BASE = <span class="tok-str">"http://localhost:8080/api/v1"</span>   <span class="tok-cmt"># swap for https://chirp.j4ck.xyz/api/v1 in prod</span>
 KEY  = <span class="tok-str">"chirp_your_key_here"</span>
 HDR  = {<span class="tok-str">"Authorization"</span>: <span class="tok-str">f"Bearer {KEY}"</span>}
 
