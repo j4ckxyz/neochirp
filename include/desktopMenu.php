@@ -11,6 +11,9 @@
         <a href="/compose" class="newchirp">Chirp</a>
     </nav>
     <div id="menuSettings">
+        <?php if (isset($_SESSION['username']) && $_SESSION['username'] === 'jack'): ?>
+        <a href="/admin/">🛡️ Admin Panel</a>
+        <?php endif; ?>
         <a href="/settings/account">⚙️ Settings</a>
         <?php if (isset($_SESSION['username'])): ?>
         <a href="/signout.php">🚪 Sign out</a>

@@ -46,16 +46,9 @@ try {
     exit(1);
 }
 
-// Ensure invites table exists (it should already, but just in case)
-$db->exec("CREATE TABLE IF NOT EXISTS invites (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT UNIQUE NOT NULL,
-    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-    used_by TEXT
-)");
-
 // ── Generate ───────────────────────────────────────────────────────────────────
-$stmt = $db->prepare('INSERT INTO invites (code) VALUES (:code)');
+// The invites table uses column name `invite` (not `code`)
+$stmt = $db->prepare('INSERT INTO invites (invite) VALUES (:invite)');
 
 echo "\n  NeoChirp Invite Codes\n";
 echo "  ─────────────────────\n";
@@ -66,7 +59,7 @@ for ($i = 0; $i < $count; $i++) {
     $code = substr($raw, 0, 4) . '-' . substr($raw, 4, 4) . '-' . substr($raw, 8, 4);
 
     try {
-        $stmt->execute([':code' => $code]);
+        $stmt->execute([':invite' => $code]);
         echo "  $code\n";
     } catch (PDOException $e) {
         // Collision (astronomically unlikely) — retry

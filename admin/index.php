@@ -1,380 +1,608 @@
 <?php
 session_start();
+require_once __DIR__ . '/../config.php';
 
-// Check if the user is signed in and the username is "chirp"
-if (!isset($_SESSION['username']) || $_SESSION['username'] !== 'chirp') {
-    // If the user is not signed in or if the user is not 'chirp', show 403 Forbidden
-    echo '
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="/src/styles/styles.css" rel="stylesheet">
-        <link href="/src/styles/timeline.css" rel="stylesheet">
-        <link href="/src/styles/menus.css" rel="stylesheet">
-        <link href="/src/styles/responsive.css" rel="stylesheet">
-        <title>403 Forbidden</title>
-    </head>
-    <body>
-        <div id="feed" class="settingsPageContainer">
-            <div id="iconChirp" onclick="playChirpSound()">
-                <img src="/src/images/icons/chirp.svg" alt="Chirp">
-            </div>
-            <div class="title">
-                <p class="selected">403 Forbidden</p>
-            </div>
-            <div id="noMoreChirps">
-                <p class="subText">Your account is not allowed to perform this action.</p>
-                <a class="followButton following tryAgain" href="/">Go back home</a>
-            </div>
-        </div>
-    </body>
-    </html>';
+// ── Auth ───────────────────────────────────────────────────────────────────────
+// Admin is restricted to a single hardcoded account.
+define('ADMIN_USERNAME', 'jack');
+
+if (!isset($_SESSION['username']) || $_SESSION['username'] !== ADMIN_USERNAME) {
+    http_response_code(403);
+    // Show a plain 403 — don't leak the admin username
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+    <link href="/src/styles/styles.css" rel="stylesheet">
+    <link href="/src/styles/timeline.css" rel="stylesheet">
+    <title>403 Forbidden</title></head>
+    <body><div id="feed" class="settingsPageContainer">
+    <div class="title"><p class="selected">403 Forbidden</p></div>
+    <div id="noMoreChirps"><p class="subText">You are not allowed to access this page.</p>
+    <a class="followButton following" href="/">Go home</a></div>
+    </div></body></html>';
     exit;
 }
 
-// Connect to the database
-$db = new PDO('sqlite:' . __DIR__ . '/../../chirp.db');
+// ── Security headers ───────────────────────────────────────────────────────────
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;");
 
-// Function to generate a random invite code
-function generateInviteCode($length = 6) {
-    $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    $charactersLength = strlen($characters);
-    $randomString = '';
-    for ($i = 0; $i < $length; $i++) {
-        $randomString .= $characters[rand(0, $charactersLength - 1)];
+// ── CSRF token ─────────────────────────────────────────────────────────────────
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf = $_SESSION['csrf_token'];
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function h(string $s): string {
+    return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+function ts(int $t): string {
+    return date('Y-m-d H:i', $t);
+}
+
+// ── Database ───────────────────────────────────────────────────────────────────
+try {
+    $db = new PDO('sqlite:' . DB_PATH);
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo '<p>Database error.</p>';
+    exit;
+}
+
+// ── AJAX / POST actions ────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // All POST actions verify CSRF
+    $tok = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($csrf, $tok)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid CSRF token']);
+        exit;
     }
-    return $randomString;
-}
 
-// If the Generate new invite code button is clicked (via AJAX)
-if (isset($_POST['generateCode'])) {
-    // Generate a new invite code but do not save it yet
-    $newInviteCode = generateInviteCode();
+    $action = $_POST['action'] ?? '';
 
-    // Return the new invite code as JSON response
-    echo json_encode(['inviteCode' => $newInviteCode]);
-    exit;
-}
-
-// If the Done button is clicked (via AJAX)
-if (isset($_POST['doneCode'])) {
-    // Get the invite code from the POST data
-    $inviteCode = $_POST['inviteCode'];
-
-    // Save the invite code to the database
-    $stmt = $db->prepare("INSERT INTO invites (invite) VALUES (:invite)");
-    $stmt->bindParam(':invite', $inviteCode);
-    $stmt->execute();
-
-    // Return a success message as JSON response
-    echo json_encode(['status' => 'success']);
-    exit;
-}
-
-// If the Migrate button is clicked (via AJAX)
-if (isset($_POST['migrateUser'])) {
-    $migrateFrom = $_POST['migrateFrom'];
-    $migrateTo = $_POST['migrateTo'];
-  
-    // Validate input (optional, but recommended)
-    // You can add checks here to ensure usernames are not empty, 
-    // have a minimum length, or don't contain special characters.
-  
-    // Prepare the SQL statement to find the user with the migrateFrom username
-    $stmt = $db->prepare("SELECT * FROM users WHERE username = :migrateFrom");
-    $stmt->bindParam(':migrateFrom', $migrateFrom);
-    $stmt->execute();
-  
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-  
-    if ($user) {
-      // Update the username in the database
-      $stmt = $db->prepare("UPDATE users SET username = :migrateTo WHERE id = :id");
-      $stmt->bindParam(':migrateTo', $migrateTo);
-      $stmt->bindParam(':id', $user['id']);
-      $stmt->execute();
-  
-      // Success message
-      $message = "User migrated successfully!";
-    } else {
-      // Error message if user with migrateFrom username is not found
-      $message = "User with username '$migrateFrom' not found.";
+    // ── Generate invite code ───────────────────────────────────────────────────
+    if ($action === 'generate_invite') {
+        $raw  = strtoupper(bin2hex(random_bytes(6)));
+        $code = substr($raw, 0, 4) . '-' . substr($raw, 4, 4) . '-' . substr($raw, 8, 4);
+        echo json_encode(['code' => $code]);
+        exit;
     }
-  
-    // Send the message back as JSON response
-    echo json_encode(['message' => $message]);
+
+    // ── Save invite code ───────────────────────────────────────────────────────
+    if ($action === 'save_invite') {
+        $code = trim($_POST['code'] ?? '');
+        if (!preg_match('/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/', $code)) {
+            echo json_encode(['error' => 'Invalid code format']);
+            exit;
+        }
+        try {
+            $stmt = $db->prepare('INSERT INTO invites (invite) VALUES (:invite)');
+            $stmt->execute([':invite' => $code]);
+            echo json_encode(['ok' => true]);
+        } catch (PDOException $e) {
+            echo json_encode(['error' => 'Code already exists']);
+        }
+        exit;
+    }
+
+    // ── Delete post ────────────────────────────────────────────────────────────
+    if ($action === 'delete_post') {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) { echo json_encode(['error' => 'Invalid ID']); exit; }
+
+        // Verify post exists
+        $check = $db->prepare('SELECT id FROM chirps WHERE id = :id');
+        $check->execute([':id' => $id]);
+        if (!$check->fetch()) { echo json_encode(['error' => 'Post not found']); exit; }
+
+        // Cascade delete replies first (one level deep — delete their engagement too)
+        $replies = $db->prepare('SELECT id FROM chirps WHERE parent = :id');
+        $replies->execute([':id' => $id]);
+        foreach ($replies->fetchAll(PDO::FETCH_COLUMN) as $rid) {
+            $db->prepare('DELETE FROM likes WHERE chirp_id = :id')->execute([':id' => $rid]);
+            $db->prepare('DELETE FROM rechirps WHERE chirp_id = :id')->execute([':id' => $rid]);
+        }
+        $db->prepare('DELETE FROM chirps WHERE parent = :id')->execute([':id' => $id]);
+
+        // Delete engagement on the post itself
+        $db->prepare('DELETE FROM likes WHERE chirp_id = :id')->execute([':id' => $id]);
+        $db->prepare('DELETE FROM rechirps WHERE chirp_id = :id')->execute([':id' => $id]);
+
+        // Delete notifications referencing this post (if table exists)
+        try {
+            $db->prepare('DELETE FROM notifications WHERE chirp_id = :id')->execute([':id' => $id]);
+        } catch (PDOException $e) { /* table may not exist */ }
+
+        // Delete the post
+        $db->prepare('DELETE FROM chirps WHERE id = :id')->execute([':id' => $id]);
+
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    // ── Delete user ────────────────────────────────────────────────────────────
+    if ($action === 'delete_user') {
+        $username = trim($_POST['username'] ?? '');
+        if ($username === '' || $username === ADMIN_USERNAME) {
+            echo json_encode(['error' => 'Cannot delete this account']);
+            exit;
+        }
+
+        $uStmt = $db->prepare('SELECT id FROM users WHERE username = :u');
+        $uStmt->execute([':u' => $username]);
+        $user = $uStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) { echo json_encode(['error' => 'User not found']); exit; }
+
+        $uid = (int)$user['id'];
+
+        // Get all post IDs owned by this user
+        $postIds = $db->prepare('SELECT id FROM chirps WHERE user = :uid');
+        $postIds->execute([':uid' => $uid]);
+        foreach ($postIds->fetchAll(PDO::FETCH_COLUMN) as $pid) {
+            // Cascade replies
+            $repIds = $db->prepare('SELECT id FROM chirps WHERE parent = :pid');
+            $repIds->execute([':pid' => $pid]);
+            foreach ($repIds->fetchAll(PDO::FETCH_COLUMN) as $rid) {
+                $db->prepare('DELETE FROM likes WHERE chirp_id = :id')->execute([':id' => $rid]);
+                $db->prepare('DELETE FROM rechirps WHERE chirp_id = :id')->execute([':id' => $rid]);
+            }
+            $db->prepare('DELETE FROM chirps WHERE parent = :pid')->execute([':pid' => $pid]);
+            $db->prepare('DELETE FROM likes WHERE chirp_id = :id')->execute([':id' => $pid]);
+            $db->prepare('DELETE FROM rechirps WHERE chirp_id = :id')->execute([':id' => $pid]);
+            try {
+                $db->prepare('DELETE FROM notifications WHERE chirp_id = :id')->execute([':id' => $pid]);
+            } catch (PDOException $e) {}
+        }
+        // Delete user's chirps
+        $db->prepare('DELETE FROM chirps WHERE user = :uid')->execute([':uid' => $uid]);
+
+        // Delete likes/rechirps left by this user on others' posts
+        $db->prepare('DELETE FROM likes WHERE user_id = :uid')->execute([':uid' => $uid]);
+        $db->prepare('DELETE FROM rechirps WHERE user_id = :uid')->execute([':uid' => $uid]);
+
+        // Delete following relationships
+        $db->prepare('DELETE FROM following WHERE follower_id = :uid OR following_id = :uid')->execute([':uid' => $uid]);
+
+        // Delete messages
+        $db->prepare('DELETE FROM messages WHERE `from` = :u OR `to` = :u')->execute([':u' => $username]);
+
+        // Delete API keys, OAuth tokens (if tables exist)
+        foreach (['api_keys', 'oauth_tokens', 'oauth_codes'] as $tbl) {
+            try {
+                $db->prepare("DELETE FROM $tbl WHERE user_id = :uid")->execute([':uid' => $uid]);
+            } catch (PDOException $e) {}
+        }
+        try {
+            $db->prepare('DELETE FROM oauth_apps WHERE owner_user_id = :uid')->execute([':uid' => $uid]);
+        } catch (PDOException $e) {}
+
+        // Delete notifications for/from this user
+        try {
+            $db->prepare('DELETE FROM notifications WHERE user_id = :uid OR actor_id = :uid')->execute([':uid' => $uid]);
+        } catch (PDOException $e) {}
+
+        // Finally delete the user
+        $db->prepare('DELETE FROM users WHERE id = :uid')->execute([':uid' => $uid]);
+
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    // ── Migrate username ───────────────────────────────────────────────────────
+    if ($action === 'migrate_user') {
+        $from = trim($_POST['from'] ?? '');
+        $to   = trim($_POST['to']   ?? '');
+        if ($from === '' || $to === '') { echo json_encode(['error' => 'Both fields required']); exit; }
+        if (!preg_match('/^[a-zA-Z0-9_]{1,50}$/', $to)) {
+            echo json_encode(['error' => 'Invalid username format (letters, numbers, _ only)']);
+            exit;
+        }
+        $check = $db->prepare('SELECT id FROM users WHERE username = :u');
+        $check->execute([':u' => $to]);
+        if ($check->fetch()) { echo json_encode(['error' => 'Username already taken']); exit; }
+
+        $stmt = $db->prepare('UPDATE users SET username = :to WHERE username = :from');
+        $stmt->execute([':to' => $to, ':from' => $from]);
+        if ($stmt->rowCount() === 0) { echo json_encode(['error' => "User '$from' not found"]); exit; }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    echo json_encode(['error' => 'Unknown action']);
     exit;
-  }
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────────
+$stats = [];
+$stats['users']   = (int)$db->query("SELECT COUNT(*) FROM users")->fetchColumn();
+$stats['posts']   = (int)$db->query("SELECT COUNT(*) FROM chirps WHERE type = 'post'")->fetchColumn();
+$stats['replies'] = (int)$db->query("SELECT COUNT(*) FROM chirps WHERE type = 'reply'")->fetchColumn();
+$stats['likes']   = (int)$db->query("SELECT COUNT(*) FROM likes")->fetchColumn();
+$stats['rechirps']= (int)$db->query("SELECT COUNT(*) FROM rechirps")->fetchColumn();
+$stats['invites'] = (int)$db->query("SELECT COUNT(*) FROM invites WHERE reservedFor IS NULL")->fetchColumn();
+
+// ── Recent users ───────────────────────────────────────────────────────────────
+$recentUsers = $db->query("SELECT id, username, name, created_at FROM users ORDER BY created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
+
+// ── Recent posts ───────────────────────────────────────────────────────────────
+$recentPosts = $db->query("
+    SELECT c.id, c.chirp, c.timestamp, c.type, c.via, u.username
+    FROM chirps c
+    JOIN users u ON u.id = c.user
+    ORDER BY c.timestamp DESC
+    LIMIT 30
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// ── Search ─────────────────────────────────────────────────────────────────────
+$searchResults = [];
+$searchType    = '';
+$searchQuery   = '';
+if (isset($_GET['q']) && isset($_GET['t'])) {
+    $searchQuery = trim($_GET['q']);
+    $searchType  = $_GET['t'] === 'users' ? 'users' : 'posts';
+    if ($searchQuery !== '') {
+        $like = '%' . $searchQuery . '%';
+        if ($searchType === 'users') {
+            $s = $db->prepare("SELECT id, username, name, created_at FROM users WHERE username LIKE :q OR name LIKE :q ORDER BY created_at DESC LIMIT 50");
+            $s->execute([':q' => $like]);
+        } else {
+            $s = $db->prepare("SELECT c.id, c.chirp, c.timestamp, c.type, c.via, u.username FROM chirps c JOIN users u ON u.id = c.user WHERE c.chirp LIKE :q OR u.username LIKE :q ORDER BY c.timestamp DESC LIMIT 50");
+            $s->execute([':q' => $like]);
+        }
+        $searchResults = $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <link href="/src/styles/styles.css" rel="stylesheet">
     <link href="/src/styles/timeline.css" rel="stylesheet">
     <link href="/src/styles/menus.css" rel="stylesheet">
     <link href="/src/styles/responsive.css" rel="stylesheet">
-
-    <script defer src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous">
-    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <script src="/src/scripts/general.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <title>Admin panel - Chirp</title>
+    <title>Admin — NeoChirp</title>
+    <style>
+        .admin-stats { display:flex; gap:12px; flex-wrap:wrap; margin:16px 0; }
+        .stat-card { background:var(--bg-secondary,#1a1a1a); border:1px solid var(--border,#333); border-radius:12px; padding:14px 20px; min-width:110px; text-align:center; }
+        .stat-card .num { font-size:1.6rem; font-weight:700; }
+        .stat-card .lbl { font-size:.75rem; color:#888; margin-top:2px; }
+        .admin-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+        .admin-table th { text-align:left; padding:8px 10px; border-bottom:1px solid #333; color:#888; font-weight:600; }
+        .admin-table td { padding:8px 10px; border-bottom:1px solid #222; vertical-align:top; word-break:break-word; }
+        .admin-table tr:hover td { background:rgba(255,255,255,.03); }
+        .chirp-text { max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .del-btn { background:#c0392b; color:#fff; border:none; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.8rem; }
+        .del-btn:hover { background:#e74c3c; }
+        .section-title { font-weight:700; font-size:1rem; margin:24px 0 10px; color:#fff; }
+        .search-bar { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+        .search-bar input { flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid #333; background:#111; color:#fff; font-size:.9rem; }
+        .search-bar select { padding:8px 10px; border-radius:8px; border:1px solid #333; background:#111; color:#fff; font-size:.9rem; }
+        .search-bar button { padding:8px 16px; border-radius:8px; border:none; background:var(--accent,#1d9bf0); color:#fff; cursor:pointer; font-size:.9rem; }
+        .tab-bar { display:flex; gap:4px; margin-bottom:20px; }
+        .tab-btn { padding:8px 18px; border-radius:20px; border:1px solid #333; background:none; color:#aaa; cursor:pointer; font-size:.85rem; }
+        .tab-btn.active { background:var(--accent,#1d9bf0); border-color:var(--accent,#1d9bf0); color:#fff; }
+        .toast { position:fixed; bottom:24px; right:24px; background:#333; color:#fff; padding:12px 18px; border-radius:10px; font-size:.9rem; z-index:9999; display:none; }
+        .toast.ok  { background:#27ae60; }
+        .toast.err { background:#c0392b; }
+        .invite-display { font-family:monospace; font-size:1.1rem; letter-spacing:.1em; padding:10px 14px; background:#111; border-radius:8px; border:1px solid #333; margin:10px 0; user-select:all; }
+    </style>
 </head>
-
 <body>
-    <header>
-        <div id="desktopMenu">
-            <nav>
-                <img src="/src/images/icons/chirp.svg" alt="Chirp" onclick="playChirpSound()">
-                <a href="/"><img src="/src/images/icons/house.svg" alt=""> Home</a>
-                <a href="/discover"><img src="/src/images/icons/search.svg" alt=""> Discover</a>
-                <?php if (isset($_SESSION['username'])): ?>
-                <a href="/notifications"><img src="/src/images/icons/bell.svg" alt=""> Notifications</a>
-                <a href="/messages"><img src="/src/images/icons/envelope.svg" alt=""> Direct Messages</a>
-                <a
-                    href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>">
-                    <img src="/src/images/icons/person.svg" alt=""> Profile
-                </a>
-                    <button class="newchirp" onclick="openNewChirpModal()">Chirp</button>
-                <?php endif; ?>
-            </nav>
+<header>
+    <div id="desktopMenu">
+        <nav>
+            <img src="/src/images/icons/chirp.svg" alt="Chirp" onclick="playChirpSound()">
+            <a href="/"><img src="/src/images/icons/house.svg" alt=""> Home</a>
+            <a href="/discover"><img src="/src/images/icons/search.svg" alt=""> Discover</a>
+            <?php if (isset($_SESSION['username'])): ?>
+            <a href="/notifications"><img src="/src/images/icons/bell.svg" alt=""> Notifications</a>
+            <a href="/messages"><img src="/src/images/icons/envelope.svg" alt=""> Direct Messages</a>
+            <a href="/user?id=<?php echo h($_SESSION['username']); ?>"><img src="/src/images/icons/person.svg" alt=""> Profile</a>
+            <button class="newchirp" onclick="openNewChirpModal()">Chirp</button>
+            <?php endif; ?>
+        </nav>
+        <div id="menuSettings">
+            <a href="/admin">🛡️ Admin panel</a>
+            <a href="/settings/account">⚙️ Settings</a>
+            <a href="/signout.php">🚪 Sign out</a>
+        </div>
+        <button id="settingsButtonWrapper" type="button" onclick="showMenuSettings()">
+            <img class="userPic" src="<?php echo h($_SESSION['profile_pic'] ?? '/src/images/users/guest/user.svg'); ?>" alt="<?php echo h($_SESSION['username'] ?? 'guest'); ?>">
+            <div>
+                <p class="usernameMenu"><?php echo h($_SESSION['name'] ?? 'Admin'); ?></p>
+                <p class="subText">@<?php echo h($_SESSION['username'] ?? ''); ?></p>
+            </div>
+            <p class="settingsButton">⚙️</p>
+        </button>
+    </div>
+</header>
 
-            <div id="menuSettings">
-                <?php if (isset($_SESSION['username']) && $_SESSION['username'] == 'chirp'): ?>
-                <a href="/admin">🛡️ Admin panel</a>
-                <?php endif; ?>
-                <a href="/settings/account">⚙️ Settings</a>
-                <?php if (isset($_SESSION['username'])): ?>
-                <a href="/signout.php">🚪 Sign out</a>
-                <?php else: ?>
-                <a href="/signin/">🚪 Sign in</a>
-                <?php endif; ?>
-            </div>
-            <button id="settingsButtonWrapper" type="button" onclick="showMenuSettings()">
-                <img class="userPic"
-                    src="<?php echo isset($_SESSION['profile_pic']) ? htmlspecialchars($_SESSION['profile_pic']) : '/src/images/users/guest/user.svg'; ?>"
-                    alt="<?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'guest'; ?>">
-                <div>
-                    <p class="usernameMenu">
-                        <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Guest'; ?>
-                        <?php if (isset($_SESSION['is_verified']) && $_SESSION['is_verified']): ?>
-                        <img class="emoji" src="/src/images/icons/verified.svg" alt="Verified">
-                        <?php endif; ?>
-                    </p>
-                    <p class="subText">
-                        @<?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'guest'; ?>
-                    </p>
-                </div>
-                <p class="settingsButton">⚙️</p>
-            </button>
-        </div>
-    </header>
-    <main>
-        <?php if (!isset($_SESSION['username']) || $_SESSION['username'] !== 'chirp') : ?>
-        <!-- If the user is not signed in or if the user is not 'chirp', show 403 Forbidden -->
-        <div id="feed" class="settingsPageContainer">
-            <div id="iconChirp" onclick="playChirpSound()">
-                <img src="/src/images/icons/chirp.svg" alt="Chirp">
-            </div>
-            <div class="title">
-                <p class="selected">403 Forbidden</p>
-            </div>
-            <div id="noMoreChirps">
-                <p class="subText">Your account is not allowed to perform this action.</p>
-                <button class="followButton following tryAgain" onclick="window.location.href='/';">Go back home</button>
-            </div>
-        </div>
-        <?php else : ?>
-        <!-- If user is 'chirp', show the admin panel -->
-        <div id="feed" class="settingsPageContainer">
-            <div id="iconChirp" onclick="playChirpSound()">
-                <img src="/src/images/icons/chirp.svg" alt="Chirp">
-            </div>
-            <div class="title">
-                <p class="selected">Admin panel</p>
-            </div>
-            <div id="settings">
-                <div id="settingsExpand">
-                    <ul>
-                        <li class="activeDesktop">
-                            <a class="settingsMenuLink" href="/settings/account">👤 Manage users</a>
-                        </li>
-                        <li>
-                            <a class="settingsMenuLink" href="/settings/content-you-see">📝 Manage content</a>
-                        </li>
-                    </ul>
-                </div>
-                <div id="expandedSettings">
-                    <ul>
-                        <li onclick="showinviteCodeModal()">
-                            <div>➕ New invite code<p class="subText">Generate a new invite code for a user to sign up with</p>
-                            </div>
-                            <p class="subText">▷</p>
-                        </li>
-                        <li>
-                            <div>🔢 List invite codes<p class="subText">Show a list of created invite codes and what user has used them</p>
-                            </div>
-                            <p class="subText">▷</p>
-                        </li>
-                        <li>
-                            <div>
-                                🧑‍⚖️ Manage & moderate accounts<p class="subText">Change account details or suspend and moderate accounts</p>
-                            </div>
-                            <p class="subText">▷</p>
-                        </li>
-                        <li onclick="showMigrateModal()">
-                            <div>
-                                🧑‍⚖️ Migrate user<p class="subText">Migrate a user from one username to another</p>
-                            </div>
-                            <p class="subText">▷</p>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+<main>
+<div id="feed" class="settingsPageContainer" style="max-width:900px;">
+    <div id="iconChirp" onclick="playChirpSound()">
+        <img src="/src/images/icons/chirp.svg" alt="Chirp">
+    </div>
+    <div class="title">
+        <p class="selected">🛡️ Admin Panel</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="admin-stats">
+        <div class="stat-card"><div class="num"><?php echo $stats['users']; ?></div><div class="lbl">Users</div></div>
+        <div class="stat-card"><div class="num"><?php echo $stats['posts']; ?></div><div class="lbl">Posts</div></div>
+        <div class="stat-card"><div class="num"><?php echo $stats['replies']; ?></div><div class="lbl">Replies</div></div>
+        <div class="stat-card"><div class="num"><?php echo $stats['likes']; ?></div><div class="lbl">Likes</div></div>
+        <div class="stat-card"><div class="num"><?php echo $stats['rechirps']; ?></div><div class="lbl">Rechirps</div></div>
+        <div class="stat-card"><div class="num"><?php echo $stats['invites']; ?></div><div class="lbl">Unused Invites</div></div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab('posts', this)">Recent Posts</button>
+        <button class="tab-btn" onclick="showTab('users', this)">Recent Users</button>
+        <button class="tab-btn" onclick="showTab('search', this)">Search</button>
+        <button class="tab-btn" onclick="showTab('tools', this)">Tools</button>
+    </div>
+
+    <!-- Posts tab -->
+    <div id="tab-posts">
+        <p class="section-title">Recent Posts (last 30)</p>
+        <table class="admin-table">
+            <thead><tr><th>ID</th><th>User</th><th>Content</th><th>Via</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ($recentPosts as $p): ?>
+            <tr id="row-post-<?php echo (int)$p['id']; ?>">
+                <td><?php echo (int)$p['id']; ?></td>
+                <td><a href="/user?id=<?php echo h($p['username']); ?>">@<?php echo h($p['username']); ?></a></td>
+                <td class="chirp-text" title="<?php echo h($p['chirp']); ?>"><?php echo h($p['chirp']); ?></td>
+                <td><?php echo h($p['via'] ?? ''); ?></td>
+                <td><?php echo ts((int)$p['timestamp']); ?></td>
+                <td><button class="del-btn" onclick="deletePost(<?php echo (int)$p['id']; ?>)">Delete</button></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Users tab -->
+    <div id="tab-users" style="display:none;">
+        <p class="section-title">Recent Users (last 20)</p>
+        <table class="admin-table">
+            <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Joined</th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ($recentUsers as $u): ?>
+            <tr id="row-user-<?php echo h($u['username']); ?>">
+                <td><?php echo (int)$u['id']; ?></td>
+                <td><a href="/user?id=<?php echo h($u['username']); ?>">@<?php echo h($u['username']); ?></a></td>
+                <td><?php echo h($u['name']); ?></td>
+                <td><?php echo ts((int)$u['created_at']); ?></td>
+                <td><?php if ($u['username'] !== ADMIN_USERNAME): ?>
+                    <button class="del-btn" onclick="deleteUser('<?php echo h($u['username']); ?>')">Delete</button>
+                <?php endif; ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Search tab -->
+    <div id="tab-search" style="display:none;">
+        <p class="section-title">Search</p>
+        <form class="search-bar" method="get" action="/admin/">
+            <input type="text" name="q" value="<?php echo h($searchQuery); ?>" placeholder="Search…">
+            <select name="t">
+                <option value="posts" <?php echo $searchType === 'posts' ? 'selected' : ''; ?>>Posts</option>
+                <option value="users" <?php echo $searchType === 'users' ? 'selected' : ''; ?>>Users</option>
+            </select>
+            <button type="submit">Search</button>
+        </form>
+        <?php if (!empty($searchResults)): ?>
+            <?php if ($searchType === 'users'): ?>
+            <table class="admin-table">
+                <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Joined</th><th></th></tr></thead>
+                <tbody>
+                <?php foreach ($searchResults as $u): ?>
+                <tr id="row-user-<?php echo h($u['username']); ?>">
+                    <td><?php echo (int)$u['id']; ?></td>
+                    <td><a href="/user?id=<?php echo h($u['username']); ?>">@<?php echo h($u['username']); ?></a></td>
+                    <td><?php echo h($u['name']); ?></td>
+                    <td><?php echo ts((int)$u['created_at']); ?></td>
+                    <td><?php if ($u['username'] !== ADMIN_USERNAME): ?>
+                        <button class="del-btn" onclick="deleteUser('<?php echo h($u['username']); ?>')">Delete</button>
+                    <?php endif; ?></td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php else: ?>
+            <table class="admin-table">
+                <thead><tr><th>ID</th><th>User</th><th>Content</th><th>Via</th><th>Date</th><th></th></tr></thead>
+                <tbody>
+                <?php foreach ($searchResults as $p): ?>
+                <tr id="row-post-<?php echo (int)$p['id']; ?>">
+                    <td><?php echo (int)$p['id']; ?></td>
+                    <td><a href="/user?id=<?php echo h($p['username']); ?>">@<?php echo h($p['username']); ?></a></td>
+                    <td class="chirp-text" title="<?php echo h($p['chirp']); ?>"><?php echo h($p['chirp']); ?></td>
+                    <td><?php echo h($p['via'] ?? ''); ?></td>
+                    <td><?php echo ts((int)$p['timestamp']); ?></td>
+                    <td><button class="del-btn" onclick="deletePost(<?php echo (int)$p['id']; ?>)">Delete</button></td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php endif; ?>
+        <?php elseif ($searchQuery !== ''): ?>
+            <p class="subText">No results found.</p>
         <?php endif; ?>
-    </main>
-    <div id="inviteCodeModal" class="modal">
-        <div class="modal-content editBannerModalContent">
-            <h2>New invite code</h2>
-            <textarea id="inviteCodeTextarea" disabled placeholder="Click on the button below to generate a new invite code" class="URLtextarea"></textarea>
-            <p class="subText">You need to press "Save & close" after generating an invite code, otherwise it won't be valid. The invite code will automatically be copied to your clipboard when you save it.</p>
-            <div class="modal-buttons">
-                <button class= "button cancel">Clear</button>
-                <button class="button following" id="generateCodeButton">Generate</button>
-                <button class="button" id="doneButton" type="button">Save & close</button>
-            </div>
-        </div>
     </div>
 
-    <div id="migrateModal" class="modal formGroup">
-        <div class="modal-content editBannerModalContent">
-            <h2>Migrate user</h2>
-            <p class="subText">Move a user between handles</p>
-            <textarea id="migrateFrom" placeholder="Migrate from" class="URLtextarea"></textarea>
-            <textarea id="migrateTo" placeholder="Migrate to" class="URLtextarea"></textarea>
-            <div class="modal-buttons">
-                <button class="button following" id="migrateUser">Migrate</button>
-                <button class="button" id="doneButton" type="button"  onclick="closeMigrateModal()">OK</button>
-            </div>
-            <div id="migrateStatus"></div>
+    <!-- Tools tab -->
+    <div id="tab-tools" style="display:none;">
+        <p class="section-title">Invite Codes</p>
+        <button class="followButton" onclick="generateInvite()">Generate Invite Code</button>
+        <div id="invite-output" style="display:none;">
+            <div class="invite-display" id="invite-code-display"></div>
+            <button class="followButton" onclick="saveInvite()" style="margin-top:8px;">Save &amp; Copy</button>
+        </div>
+
+        <p class="section-title" style="margin-top:28px;">Migrate Username</p>
+        <p class="subText">Move a user to a new username handle.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            <input id="migrate-from" type="text" placeholder="Current username" style="padding:8px 12px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;flex:1;min-width:140px;">
+            <input id="migrate-to"   type="text" placeholder="New username"     style="padding:8px 12px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;flex:1;min-width:140px;">
+            <button class="followButton" onclick="migrateUser()">Migrate</button>
+        </div>
+        <p id="migrate-status" class="subText" style="margin-top:8px;"></p>
+
+        <p class="section-title" style="margin-top:28px;">Delete Post by ID</p>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+            <input id="delete-post-id" type="number" min="1" placeholder="Post ID" style="padding:8px 12px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;width:160px;">
+            <button class="del-btn" style="padding:8px 16px;font-size:.9rem;" onclick="deletePostById()">Delete Post</button>
+        </div>
+
+        <p class="section-title" style="margin-top:28px;">Delete User by Username</p>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+            <input id="delete-user-name" type="text" placeholder="Username" style="padding:8px 12px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;width:200px;">
+            <button class="del-btn" style="padding:8px 16px;font-size:.9rem;" onclick="deleteUserByName()">Delete User</button>
         </div>
     </div>
+</div>
+</main>
 
-    <footer>
-        <div class="mobileMenuFooter">
-            <a href="/"><img src="/src/images/icons/house.svg" alt="Home"></a>
-            <a href="/discover"><img src="/src/images/icons/search.svg" alt="Discover"></a>
-            <a href="/notifications"><img src="/src/images/icons/bell.svg" alt="Notifications"></a>
-            <a href="/messages"><img src="/src/images/icons/envelope.svg" alt="Direct Messages"></a>
-            <a
-                href="<?php echo isset($_SESSION['username']) ? '/user?id=' . htmlspecialchars($_SESSION['username']) : '/signin'; ?>"><img
-                    src="/src/images/icons/person.svg" alt="Profile"></a>
-        </div>
-    </footer>
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
 
-    <script>
-        function showinviteCodeModal() {
-            document.getElementById("inviteCodeModal").style.display = "block";
-        }
+<footer>
+    <div class="mobileMenuFooter">
+        <a href="/"><img src="/src/images/icons/house.svg" alt="Home"></a>
+        <a href="/discover"><img src="/src/images/icons/search.svg" alt="Discover"></a>
+        <a href="/notifications"><img src="/src/images/icons/bell.svg" alt="Notifications"></a>
+        <a href="/messages"><img src="/src/images/icons/envelope.svg" alt="Direct Messages"></a>
+        <a href="/user?id=<?php echo h($_SESSION['username']); ?>"><img src="/src/images/icons/person.svg" alt="Profile"></a>
+    </div>
+</footer>
 
-        function showMigrateModal() {
-            document.getElementById("migrateModal").style.display = "block";
-        }
+<script>
+const CSRF = <?php echo json_encode($csrf); ?>;
 
-        function closeinviteCodeModal() {
-            document.getElementById("inviteCodeModal").style.display = "none";
-        }
-
-        function closeMigrateModal() {
-            document.getElementById("migrateModal").style.display = "none";
-        }
-
-        // Clear the textarea and close the modal
-        function clearTextareaAndCloseModal() {
-            document.getElementById("inviteCodeTextarea").value = ''; // Clear the textarea
-            closeinviteCodeModal(); // Close the modal
-        }
-
-        // Close the modal when clicking outside of it
-        window.onclick = function(event) {
-            var modal = document.getElementById("inviteCodeModal");
-            if (event.target == modal) {
-                closeinviteCodeModal();
-            }
-        }
-
-        // Handle Generate new invite code button click
-        document.getElementById("generateCodeButton").addEventListener("click", function() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "", true);
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    var response = JSON.parse(xhr.responseText);
-                    document.getElementById("inviteCodeTextarea").value = response.inviteCode;
-                }
-            };
-            xhr.send("generateCode=true");
-        });
-
-        // Handle Done button click
-        document.getElementById("doneButton").addEventListener("click", function() {
-            var inviteCode = document.getElementById("inviteCodeTextarea").value;
-
-            // Copy the invite code to the clipboard
-            navigator.clipboard.writeText(inviteCode).then(function() {
-                var xhr = new XMLHttpRequest();
-                xhr.open("POST", "", true);
-                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        var response = JSON.parse(xhr.responseText);
-                        if (response.status === 'success') {
-                            clearTextareaAndCloseModal(); // Clear textarea and close modal
-                        }
-                    }
-                };
-                xhr.send("doneCode=true&inviteCode=" + encodeURIComponent(inviteCode));
-            });
-        });
-
-        // Handle Migrate button click
-document.getElementById("migrateUser").addEventListener("click", function() {
-  var migrateFrom = document.getElementById("migrateFrom").value;
-  var migrateTo = document.getElementById("migrateTo").value;
-
-  // Validate input (optional, but recommended)
-  // You can add checks here to ensure usernames are not empty, 
-  // have a minimum length, or don't contain special characters.
-
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "", true);
-  xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  xhr.onload   
- = function() {
-    if (xhr.status === 200) {
-      var response = JSON.parse(xhr.responseText);
-      document.getElementById("migrateStatus").textContent   
- = response.message;
-    }
-  };
-  xhr.send("migrateUser=true&migrateFrom=" + encodeURIComponent(migrateFrom) + "&migrateTo=" + encodeURIComponent(migrateTo));
+// ── Tabs ───────────────────────────────────────────────────────────────────────
+function showTab(name, btn) {
+    ['posts','users','search','tools'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = t === name ? '' : 'none';
+    });
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+<?php if ($searchQuery !== ''): ?>
+// Auto-open search tab if there's a query in URL
+document.addEventListener('DOMContentLoaded', () => {
+    const searchBtn = document.querySelectorAll('.tab-btn')[2];
+    showTab('search', searchBtn);
 });
-    </script>
-</body>
+<?php endif; ?>
 
+// ── Toast ──────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// ── Generic POST ───────────────────────────────────────────────────────────────
+async function adminPost(data) {
+    data.csrf_token = CSRF;
+    const r = await fetch('/admin/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams(data)
+    });
+    return r.json();
+}
+
+// ── Delete post ────────────────────────────────────────────────────────────────
+async function deletePost(id) {
+    if (!confirm('Permanently delete post #' + id + ' and all its replies/likes?')) return;
+    const res = await adminPost({action:'delete_post', id});
+    if (res.ok) {
+        document.querySelectorAll('#row-post-' + id).forEach(r => r.remove());
+        toast('Post #' + id + ' deleted');
+    } else {
+        toast(res.error || 'Error', 'err');
+    }
+}
+function deletePostById() {
+    const id = parseInt(document.getElementById('delete-post-id').value);
+    if (!id) return;
+    deletePost(id);
+}
+
+// ── Delete user ────────────────────────────────────────────────────────────────
+async function deleteUser(username) {
+    if (!confirm('Permanently delete @' + username + ' and ALL their data? This cannot be undone.')) return;
+    const res = await adminPost({action:'delete_user', username});
+    if (res.ok) {
+        document.querySelectorAll('#row-user-' + username).forEach(r => r.remove());
+        toast('@' + username + ' deleted');
+    } else {
+        toast(res.error || 'Error', 'err');
+    }
+}
+function deleteUserByName() {
+    const u = document.getElementById('delete-user-name').value.trim();
+    if (!u) return;
+    deleteUser(u);
+}
+
+// ── Invite code ────────────────────────────────────────────────────────────────
+let pendingCode = '';
+async function generateInvite() {
+    const res = await adminPost({action:'generate_invite'});
+    if (res.code) {
+        pendingCode = res.code;
+        document.getElementById('invite-code-display').textContent = res.code;
+        document.getElementById('invite-output').style.display = '';
+    } else {
+        toast(res.error || 'Error', 'err');
+    }
+}
+async function saveInvite() {
+    if (!pendingCode) return;
+    const res = await adminPost({action:'save_invite', code: pendingCode});
+    if (res.ok) {
+        navigator.clipboard.writeText(pendingCode).catch(() => {});
+        toast('Code saved & copied: ' + pendingCode);
+        document.getElementById('invite-output').style.display = 'none';
+        pendingCode = '';
+    } else {
+        toast(res.error || 'Error', 'err');
+    }
+}
+
+// ── Migrate user ───────────────────────────────────────────────────────────────
+async function migrateUser() {
+    const from = document.getElementById('migrate-from').value.trim();
+    const to   = document.getElementById('migrate-to').value.trim();
+    if (!from || !to) { toast('Both fields required', 'err'); return; }
+    const res = await adminPost({action:'migrate_user', from, to});
+    const el = document.getElementById('migrate-status');
+    if (res.ok) {
+        el.textContent = '✓ Migrated @' + from + ' → @' + to;
+        toast('User migrated');
+    } else {
+        el.textContent = '✗ ' + (res.error || 'Error');
+        toast(res.error || 'Error', 'err');
+    }
+}
+</script>
+</body>
 </html>
