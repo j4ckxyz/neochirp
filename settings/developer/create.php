@@ -25,7 +25,7 @@ if (empty($name) || empty($redirectUris)) {
 $name = substr($name, 0, 60);
 $description = substr($description, 0, 200);
 
-$db = new PDO('sqlite:' . __DIR__ . '/../../../chirp.db');
+$db = new PDO('sqlite:' . DB_PATH);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $clientId  = bin2hex(random_bytes(16));

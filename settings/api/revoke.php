@@ -16,7 +16,7 @@ $userId = (int)$_SESSION['user_id'];
 $keyId = (int)($_POST['key_id'] ?? 0);
 
 if ($keyId > 0) {
-    $db = new PDO('sqlite:' . __DIR__ . '/../../../chirp.db');
+    $db = new PDO('sqlite:' . DB_PATH);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $stmt = $db->prepare('DELETE FROM api_keys WHERE id = :id AND user_id = :uid');
     $stmt->execute([':id' => $keyId, ':uid' => $userId]);

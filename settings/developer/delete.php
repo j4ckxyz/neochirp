@@ -20,7 +20,7 @@ if (!$appId) {
     exit;
 }
 
-$db = new PDO('sqlite:' . __DIR__ . '/../../../chirp.db');
+$db = new PDO('sqlite:' . DB_PATH);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Verify ownership

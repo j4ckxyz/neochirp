@@ -16,6 +16,11 @@ if [ ! -f "$DB_FILE" ]; then
     echo "[neochirp] Database initialised."
 fi
 
+# Run migrations (CREATE TABLE IF NOT EXISTS — safe to repeat every start)
+echo "[neochirp] Running migrations..."
+sqlite3 "$DB_FILE" < /var/www/html/migrations.sql
+echo "[neochirp] Migrations done."
+
 # Fix permissions
 chown -R www-data:www-data /var/www
 

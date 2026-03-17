@@ -20,7 +20,7 @@ $name = substr($name, 0, 100);
 $raw = 'chirp_' . bin2hex(random_bytes(20));
 $hash = hash('sha256', $raw);
 
-$db = new PDO('sqlite:' . __DIR__ . '/../../../chirp.db');
+$db = new PDO('sqlite:' . DB_PATH);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $stmt = $db->prepare('INSERT INTO api_keys (user_id, key_hash, name, created_at) VALUES (:uid, :hash, :name, :ts)');
